@@ -9,6 +9,7 @@
 @inject ProductConsumer productConsumer
 @inject CartConsumer cartConsumer
 @inject AuthenticationStateProvider AuthStateProvider
+@inject WishListConsumer wishListConsumer
 
 @if (product == null)
 {
@@ -172,6 +173,8 @@ else
 
     ProductDetailsDto? product;
 
+    int currentWishListItemId = 0;
+
     protected override async Task OnParametersSetAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
@@ -180,8 +183,25 @@ else
 
         if (product != null)
         {
-            isFavorite =
-            await favoriteStateService.IsFavoriteAsync(product.ProductId);
+            var firstVariantId = product.Variants.FirstOrDefault()?.ProductVariantId ?? 0;
+            if (isLoggedIn)
+            {
+                try
+                {
+                    var wishlist = await wishListConsumer.GetWishListByUserIdAsync();
+                    var item = wishlist?.wishListItems.FirstOrDefault(x => x.ProductvariantId == firstVariantId);
+                    if (item != null)
+                    {
+                        isFavorite = true;
+                        currentWishListItemId = item.WishListItemId;
+                    }
+                }
+                catch { }
+            }
+            else
+            {
+                isFavorite = await favoriteStateService.IsFavoriteAsync(firstVariantId);
+            }
         }
     }
 
@@ -224,21 +244,49 @@ else
         if (product == null)
             return;
 
+        var firstVariantId = product.Variants.FirstOrDefault()?.ProductVariantId ?? 0;
+
         if (isFavorite)
         {
-            await favoriteStateService.RemoveFromFavoriteAsync(product.ProductId);
+            if (isLoggedIn)
+            {
+                if (currentWishListItemId > 0)
+                {
+                    await wishListConsumer.DeletItemWishListAsync(currentWishListItemId);
+                    currentWishListItemId = 0;
+                }
+            }
+            else
+            {
+                await favoriteStateService.RemoveFromFavoriteAsync(firstVariantId);
+            }
             isFavorite = false;
         }
         else
         {
-            await favoriteStateService.AddToFavoriteAsync(
-                new FavoriteItemDto
+            if (isLoggedIn)
+            {
+                await wishListConsumer.AddWishListAsync(firstVariantId);
+                try
                 {
-                    ProductId = product.ProductId,
-                    ProductName = product.Name,
-                    ImageUrl = product.Images.FirstOrDefault(),
-                    Price = product.Variants.FirstOrDefault()?.Price ?? 0
-                });
+                    var wishlist = await wishListConsumer.GetWishListByUserIdAsync();
+                    var item = wishlist?.wishListItems.FirstOrDefault(x => x.ProductvariantId == firstVariantId);
+                    if (item != null) currentWishListItemId = item.WishListItemId;
+                }
+                catch { }
+            }
+            else
+            {
+                await favoriteStateService.AddToFavoriteAsync(
+                    new FavoriteItemDto
+                    {
+                        ProductId = product.ProductId,
+                        ProductVariantId = firstVariantId,
+                        ProductName = product.Name,
+                        ImageUrl = product.Images.FirstOrDefault(),
+                        Price = product.Variants.FirstOrDefault()?.Price ?? 0
+                    });
+            }
 
             isFavorite = true;
         }
