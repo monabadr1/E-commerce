@@ -50,6 +50,15 @@
 
     RegisterDto model = new();
 
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity is not null && authState.User.Identity.IsAuthenticated)
+        {
+            Nav.NavigateTo("/profile");
+        }
+    }
+
     async Task sign_up()
     {
         var result = await AuthConsumer.RegisterAsync(model);

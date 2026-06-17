@@ -16,13 +16,25 @@ public class CustomAuthStateProvider : AuthenticationStateProvider
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        var token = await _tokenStorage.GetTokenAsync();
+        try
+        {
+            var token = await _tokenStorage.GetTokenAsync();
 
-        if (string.IsNullOrWhiteSpace(token))
+            if (string.IsNullOrWhiteSpace(token))
+                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+
+            // Remove any possible leading/trailing quotes due to incorrect JSON serialization
+            token = token.Trim('"');
+
+            var identity = new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt");
+            var user = new ClaimsPrincipal(identity);
+            return new AuthenticationState(user);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GetAuthenticationStateAsync exception: {ex.Message}");
             return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
-        var identity = new ClaimsIdentity(ParseClaimsFromJwt(token), authenticationType: "jwt");
-        var user = new ClaimsPrincipal(identity);
-        return new AuthenticationState(user);
+        }
     }
 
     public async Task MarkUserAsAuthenticate(string token)

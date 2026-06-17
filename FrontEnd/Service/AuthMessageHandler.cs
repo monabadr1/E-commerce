@@ -21,6 +21,7 @@ public class AuthMessageHandler : DelegatingHandler
 
         if (!string.IsNullOrWhiteSpace(token))
         {
+            token = token.Trim('"');
             if (token.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
                 token = token.Substring("Bearer ".Length).Trim();
 
