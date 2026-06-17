@@ -1,0 +1,71 @@
+﻿@page "/profile"
+
+@using Shared
+@using FrontEnd.Service
+@using FrontEnd.Consumer
+@using System.Security.Claims;
+
+
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
+
+
+@if (user == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="profile-card">
+
+        <h2>My Account</h2>
+
+        <div class="profile-section">
+            <h4>Profile Information</h4>
+
+            <p><strong>Name:</strong> @user.Name</p>
+            <p><strong>Email:</strong> @user.Email</p>
+        </div>
+
+        <div class="profile-section">
+            <h4>Orders</h4>
+
+            <p>No Orders Yet</p>
+        </div>
+
+        <button class="logout-btn" @onclick="Logout">
+            Logout
+        </button>
+
+    </div>
+}
+
+@code {
+
+    private CurrentUserDto? user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var claimsPrincipal = authState.User;
+
+        if (claimsPrincipal.Identity is not null && claimsPrincipal.Identity.IsAuthenticated)
+        {
+            user = new CurrentUserDto
+            {
+                Name = claimsPrincipal.FindFirst(ClaimTypes.Name)?.Value ?? "User",
+                Email = claimsPrincipal.FindFirst(ClaimTypes.Email)?.Value ?? ""
+            };
+        }
+        else
+        {
+            Nav.NavigateTo("/account");
+        }
+    }
+
+    async Task Logout()
+    {
+        await ((CustomAuthStateProvider)AuthStateProvider).MarkUserAsLoggedOut();
+        Nav.NavigateTo("/");
+    }
+}

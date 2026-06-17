@@ -1,0 +1,24 @@
+﻿@inherits LayoutComponentBase
+
+<div class="layout">
+
+    <Sidebar IsOpen="@isOpen"
+             ToggleSidebarClicked="ToggleSidebar" />
+
+    <div class="main-content @(isOpen ? "expanded-content" : "collapsed-content")">
+
+        @Body
+
+    </div>
+
+</div>
+
+@code {
+
+    bool isOpen = false;
+
+    void ToggleSidebar()
+    {
+        isOpen = !isOpen;
+    }
+}

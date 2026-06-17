@@ -1,0 +1,64 @@
+﻿@page "/register"
+
+@using FrontEnd.Consumer
+@using FrontEnd.Service
+@using Shared
+@inject AuthConsumer AuthConsumer
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
+
+
+<div class="login-container">
+
+    <div class="login-card">
+
+        <h2>Create Account</h2>
+        <EditForm Model="@model" OnValidSubmit="sign_up">
+
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <InputText @bind-Value="model.Name"
+                       class="form-control"
+                       placeholder="Full Name" />
+
+            <InputText @bind-Value="model.Email"
+                       class="form-control"
+                       placeholder="Email" />
+
+            <InputText @bind-Value="model.Phone"
+                       class="form-control"
+                       placeholder="Phone" />
+
+            <InputText @bind-Value="model.Password"
+                       type="password"
+                       class="form-control"
+                       placeholder="Password" />
+
+            <button type="submit">
+                Register
+            </button>
+
+        </EditForm>
+
+
+    </div>
+
+</div>
+
+@code {
+
+    RegisterDto model = new();
+
+    async Task sign_up()
+    {
+        var result = await AuthConsumer.RegisterAsync(model);
+
+        if (result is not null && !string.IsNullOrEmpty(result.Token))
+        {
+            await ((CustomAuthStateProvider)AuthStateProvider).MarkUserAsAuthenticate(result.Token);
+
+            Nav.NavigateTo("/profile");
+        }
+    }
+}

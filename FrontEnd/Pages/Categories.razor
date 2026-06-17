@@ -1,0 +1,53 @@
+﻿@page "/categories/{mainCategoryId:int}"
+
+@using Shared
+@using FrontEnd.Consumer
+
+@inject ProductConsumer productConsumer
+@inject NavigationManager Nav
+
+<h2>Products</h2>
+
+@if (products == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="products-grid">
+
+        @foreach (var item in products)
+        {
+            <div class="product-card"
+                 @onclick='() => GoToDetails(item.ProductId)'>
+
+                <img src="@item.Images.FirstOrDefault()"
+                     class="product-image" />
+
+                <h3>@item.Name</h3>
+
+            </div>
+        }
+
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public int mainCategoryId { get; set; }
+
+    List<ProductDto>? products;
+
+    protected override async Task OnInitializedAsync()
+    {
+        products =
+        await productConsumer.GetproductByCategoryIdAsync(mainCategoryId);
+    }
+
+    void GoToDetails(int productId)
+    {
+        Nav.NavigateTo($"/productdetails/{productId}");
+    }
+
+}

@@ -1,0 +1,75 @@
+﻿@page "/account"
+
+@using FrontEnd.Consumer
+@using FrontEnd.Service
+@using Shared
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthConsumer AuthConsumer
+@inject CartStateService CartState
+@inject FavoriteStateService favoriteState
+@inject CartConsumer CartConsumer
+@inject WishListConsumer wishListConsumer
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="login-container">
+
+    <div class="login-card">
+
+        <h2>Welcome Back</h2>
+
+        <input @bind="model.Email"
+               placeholder="Email" />
+
+        <input @bind="model.Password"
+               type="password"
+               placeholder="Password" />
+
+        <button @onclick="sign_up">
+            Login
+        </button>
+
+        <p>
+            Don't have an account?
+            <a href="/register">Register</a>
+        </p>
+
+    </div>
+
+</div>
+
+@code {
+
+    LoginDto model = new();
+
+    async Task sign_up()
+    {
+        var response = await AuthConsumer.LoginAsync(model);
+
+        if (response != null)
+        {
+            await ((CustomAuthStateProvider)AuthStateProvider).MarkUserAsAuthenticate(response.Token);
+            var localCartItems = await CartState.GetCartAsync();
+            var favoriteItems = await favoriteState.GetFavoriteAsync();
+
+            if (localCartItems != null && localCartItems.Any())
+            {
+                await CartConsumer.SyncCartAsync(localCartItems);
+
+                await CartState.ClearCartAsync();
+            }
+
+
+            if (favoriteItems != null && favoriteItems.Any())
+            {
+                await wishListConsumer.SyncWishListAsync(favoriteItems);
+                await favoriteState.ClearFavoriteAsync();
+
+            }
+        }
+        Nav.NavigateTo("/profile");
+
+        }
+    }
+
+  

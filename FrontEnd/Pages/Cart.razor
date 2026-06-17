@@ -1,0 +1,337 @@
+﻿@page "/cart"
+
+@using Shared
+@using FrontEnd.Consumer
+@using FrontEnd.Service
+@using Microsoft.AspNetCore.Components.Web
+@inject CartConsumer cartConsumer
+@inject CartStateService CartState
+@inject NavigationManager nav
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="container py-5">
+    <h2 class="fw-bold mb-4">
+    Shopping cart
+    </h2>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-dark"></div>
+        </div>
+    }
+    else if ((isLoggedIn && (cart == null || !cart.Items.Any()))
+    || (!isLoggedIn && !localCart.Any()))
+    {
+        <div class="card border-0 shadow-sm text-center p-5">
+
+            <i class="bi bi-cart-x fs-1 text-muted"></i>
+
+            <h4 class="mt-3">
+                Your cart is empty
+            </h4>
+
+            <p class="text-muted">
+                Add some products and come back.
+            </p>
+
+        </div>
+    }
+    else
+    {
+        <div class="row">
+
+            <div class="col-lg-8">
+
+                @if (isLoggedIn)
+                {
+                    @foreach (var item in cart!.Items)
+                    {
+                        <div class="card border-0 shadow-sm rounded-4 mb-3">
+
+                            <div class="row g-0">
+
+                                <div class="col-md-3">
+
+                                    <img src="@item.ImageUrl"
+                                         class="img-fluid rounded-start h-100"
+                                         style="object-fit:cover;" />
+
+                                </div>
+
+                                <div class="col-md-9">
+
+                                    <div class="card-body">
+
+                                        <div class="d-flex justify-content-between">
+
+                                            <h5 class="fw-bold">
+                                                @item.ProductName
+                                            </h5>
+
+                                            <button class="btn btn-sm btn-outline-danger"
+                                                    @onclick="() => RemoveItem(item)">
+
+                                                <i class="bi bi-trash"></i>
+
+                                            </button>
+
+                                        </div>
+
+                                        <p class="text-muted mb-1">
+                                            Color: @item.Color
+                                        </p>
+
+                                        <p class="text-muted mb-2">
+                                            Size: @item.Size
+                                        </p>
+
+                                        <h5 class="fw-bold">
+                                            @item.Price EGP
+                                        </h5>
+
+                                        <div class="d-flex align-items-center gap-2 mt-3">
+
+                                            <button class="btn btn-outline-dark"
+                                                    @onclick="() => Decrease(item)">
+                                                -
+                                            </button>
+
+                                            <span class="fw-bold px-2">
+                                                @item.Quantity
+                                            </span>
+
+                                            <button class="btn btn-outline-dark"
+                                                    @onclick="() => Increase(item)">
+                                                +
+                                            </button>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+                    }
+                }
+                else
+                {
+                    @foreach (var item in localCart)
+                    {
+                        <div class="card border-0 shadow-sm rounded-4 mb-3">
+
+                            <div class="row g-0">
+
+                                <div class="col-md-3">
+
+                                    <img src="@item.ImageUrl"
+                                         class="img-fluid rounded-start h-100"
+                                         style="object-fit:cover;" />
+
+                                </div>
+
+                                <div class="col-md-9">
+
+                                    <div class="card-body">
+
+                                        <div class="d-flex justify-content-between">
+
+                                            <h5 class="fw-bold">
+                                                @item.ProductName
+                                            </h5>
+
+                                            <button class="btn btn-sm btn-outline-danger"
+                                                    @onclick="() => RemoveLocalItem(item.ProductVariantId)">
+
+                                                <i class="bi bi-trash"></i>
+
+                                            </button>
+
+                                        </div>
+
+                                        <p class="text-muted mb-1">
+                                            Color: @item.Color
+                                        </p>
+
+                                        <p class="text-muted mb-2">
+                                            Size: @item.Size
+                                        </p>
+
+                                        <h5 class="fw-bold">
+                                            @item.Price EGP
+                                        </h5>
+
+                                        <div class="d-flex align-items-center gap-2 mt-3">
+
+                                            <button class="btn btn-outline-dark"
+                                                    @onclick="() => DecreaseLocal(item)">
+                                                -
+                                            </button>
+
+                                            <span class="fw-bold px-2">
+                                                @item.Quantity
+                                            </span>
+
+                                            <button class="btn btn-outline-dark"
+                                                    @onclick="() => IncreaseLocal(item)">
+                                                +
+                                            </button>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+                    }
+                }
+
+            </div>
+
+            <div class="col-lg-4">
+
+                <div class="card border-0 shadow rounded-4">
+
+                    <div class="card-body">
+
+                        <h4 class="fw-bold mb-4">
+                            Order Summary
+                        </h4>
+
+                        <div class="d-flex justify-content-between">
+
+                            <span>Total</span>
+
+                            <span class="fw-bold">
+                                @GetTotal() EGP
+                            </span>
+
+                        </div>
+
+                        <hr />
+
+                        <button class="btn btn-dark w-100"
+                                @onclick="Checkout">
+
+                            Proceed To Checkout
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    }
+
+</div>
+
+
+@code {
+
+    private CartDto? cart;
+    private List<LocalCartItemDto> localCart = new();
+
+    private bool isLoggedIn;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync(); 
+        isLoggedIn = authState.User.Identity?.IsAuthenticated ?? false;
+        await LoadCart();
+        isLoading = false;
+    }
+
+    private async Task LoadCart()
+    {
+        if (isLoggedIn)
+        {
+            cart = await cartConsumer.GetCartAsync();
+        }
+        else
+        {
+            localCart = await CartState.GetCartAsync();
+        }
+    }
+
+    // ================= LOGGED USER =================
+
+    private async Task Increase(CartItemDto item)
+    {
+        await cartConsumer.UpdateQuantityAsync(new UpdateCartItemDto
+        {
+            CartItemId = item.CartItemId,
+            Quantity = item.Quantity + 1
+        });
+
+        await LoadCart();
+    }
+
+    private async Task Decrease(CartItemDto item)
+    {
+        if (item.Quantity <= 1) return;
+
+        await cartConsumer.UpdateQuantityAsync(new UpdateCartItemDto
+        {
+            CartItemId = item.CartItemId,
+            Quantity = item.Quantity - 1
+        });
+
+        await LoadCart();
+    }
+
+    private async Task RemoveItem(CartItemDto item)
+    {
+        await cartConsumer.RemoveCartItemAsync(item.CartItemId);
+        await LoadCart();
+    }
+
+    // ================= GUEST USER =================
+
+    private async Task IncreaseLocal(LocalCartItemDto item)
+    {
+        item.Quantity++;
+        await CartState.UpdateQuantityAsync(item.ProductVariantId,item.Quantity);
+        await LoadCart();
+    }
+
+    private async Task DecreaseLocal(LocalCartItemDto item)
+    {
+        if (item.Quantity <= 1) return;
+
+        item.Quantity--;
+        await CartState.UpdateQuantityAsync(item.ProductVariantId, item.Quantity);
+
+        await LoadCart();
+    }
+
+    private async Task RemoveLocalItem(int productVariantId)
+    {
+        await CartState.RemoveItemAsync(productVariantId);
+        await LoadCart();
+    }
+
+
+    private void Checkout()
+    {
+        nav.NavigateTo("/checkout");
+    }
+    private decimal GetTotal()
+    {
+        if (isLoggedIn)
+        {
+            return cart?.Items.Sum(x => x.Price * x.Quantity) ?? 0;
+        }
+
+        return localCart.Sum(x => x.Price * x.Quantity);
+    }
+}

@@ -1,0 +1,246 @@
+﻿@page "/productdetails/{productId:int}"
+
+@using Shared
+@using FrontEnd.Consumer
+@using FrontEnd.Service
+
+@inject CartStateService cartStateService
+@inject FavoriteStateService favoriteStateService
+@inject ProductConsumer productConsumer
+@inject CartConsumer cartConsumer
+@inject AuthenticationStateProvider AuthStateProvider
+
+@if (product == null)
+{
+    <div class="container py-5 text-center">
+        <div class="spinner-border text-dark"></div>
+    </div>
+}
+else
+{
+    <div class="container py-4" style="max-width:750px;">
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+
+            <div class="row g-0">
+
+                <!-- Product Image -->
+                <div class="col-lg-5">
+
+                    <div class="position-relative h-100">
+
+                        <img src="@product.Images.FirstOrDefault()"
+                             class="img-fluid w-100 product-main-image" />
+
+                        <button class="btn btn-light shadow favorite-btn"
+                                @onclick="ToggleFavorite">
+
+                            @if (isFavorite)
+                            {
+                                <i class="bi bi-heart-fill text-danger fs-4"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-heart fs-4"></i>
+                            }
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+                <!-- Product Info -->
+                <div class="col-lg-7">
+
+                    <div class="p-3 p-lg-4">
+
+                        <span class="badge bg-dark mb-3">
+                            Premium Product
+                        </span>
+
+                        <h1 class="fw-bold mb-3">
+                            @product.Name
+                        </h1>
+
+                        <p class="text-muted fs-5">
+                            @product.Description
+                        </p>
+
+                        <hr />
+
+                        <h4 class="fw-bold mb-4">
+                            Available Variants
+                        </h4>
+
+                        <div class="row g-3">
+
+                            @foreach (var item in product.Variants)
+                            {
+                                <div class="col-md-6">
+
+                                    <div class="card border-0 shadow-sm h-100 variant-card">
+
+                                        <div class="card-body">
+
+                                            <div class="d-flex align-items-center gap-2 mb-3">
+
+                                                <div class="color-circle"
+                                                     style="background:@item.color">
+                                                </div>
+
+                                                <span class="fw-semibold">
+                                                    @item.color
+                                                </span>
+
+                                            </div>
+
+                                            <p class="mb-2">
+                                                <strong>Size:</strong>
+                                                @item.size
+                                            </p>
+
+                                            <h4 class="fw-bold text-dark mb-3">
+                                                @item.Price EGP
+                                            </h4>
+
+                                            <button class="btn btn-dark w-100"
+                                                    @onclick="() => AddToCart(item)">
+
+                                                <i class="bi bi-cart-plus me-2"></i>
+
+                                                Add To Cart
+
+                                            </button>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+                            }
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+}
+
+@if (showToast)
+{
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+
+        <div class="toast show border-0 shadow">
+
+            <div class="toast-header">
+
+                <strong class="me-auto text-success">
+                    Success
+                </strong>
+
+                <button class="btn-close"
+                        @onclick="CloseToast">
+                </button>
+
+            </div>
+
+            <div class="toast-body">
+
+                <i class="bi bi-check-circle-fill text-success me-2"></i>
+
+                Product added to cart successfully
+
+            </div>
+
+        </div>
+
+    </div>
+}
+@code {
+    bool showToast = false;
+    bool isFavorite = false;
+    bool isLoggedIn = false;
+
+    [Parameter]
+    public int productId { get; set; }
+
+    ProductDetailsDto? product;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        isLoggedIn = authState.User.Identity?.IsAuthenticated ?? false;
+        product = await productConsumer.GetProductByIdAsync(productId);
+
+        if (product != null)
+        {
+            isFavorite =
+            await favoriteStateService.IsFavoriteAsync(product.ProductId);
+        }
+    }
+
+    async Task AddToCart(ProductVariantDto item)
+    {
+        if (isLoggedIn)
+        {
+            await cartConsumer.AddToCartAsync(item.ProductVariantId, 1);
+        }
+        else
+        {
+            await cartStateService.AddToCartAsync(
+                new LocalCartItemDto
+                {
+                    ProductVariantId = item.ProductVariantId,
+                    ProductName = product?.Name,
+                    ImageUrl = product?.Images.FirstOrDefault(),
+                    Price = item.Price,
+                    Quantity = 1,
+                    Color = item.color,
+                    Size = item.size
+                });
+        }
+
+        showToast = true;
+        StateHasChanged();
+
+        await Task.Delay(3000);
+
+        showToast = false;
+        StateHasChanged();
+    }
+    void CloseToast()
+    {
+        showToast = false;
+    }
+
+    async Task ToggleFavorite()
+    {
+        if (product == null)
+            return;
+
+        if (isFavorite)
+        {
+            await favoriteStateService.RemoveFromFavoriteAsync(product.ProductId);
+            isFavorite = false;
+        }
+        else
+        {
+            await favoriteStateService.AddToFavoriteAsync(
+                new FavoriteItemDto
+                {
+                    ProductId = product.ProductId,
+                    ProductName = product.Name,
+                    ImageUrl = product.Images.FirstOrDefault(),
+                    Price = product.Variants.FirstOrDefault()?.Price ?? 0
+                });
+
+            isFavorite = true;
+        }
+    }
+}

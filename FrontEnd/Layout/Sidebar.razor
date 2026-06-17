@@ -1,0 +1,70 @@
+﻿<div class="sidebar @(IsOpen ? "expanded" : "collapsed")">
+
+    <button class="menu-btn" @onclick="ToggleSidebar">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <div class="logo">
+        <i class="bi bi-shop"></i>
+
+        @if (IsOpen)
+        {
+            <span>Shopping</span>
+        }
+    </div>
+
+    <nav>
+
+        <NavLink href="/" Match="NavLinkMatch.All" class="nav-item">
+            <i class="bi bi-house"></i>
+
+            @if (IsOpen)
+            {
+                <span>Home</span>
+            }
+        </NavLink>
+
+        <NavLink href="/cart" class="nav-item">
+            <i class="bi bi-basket"></i>
+
+            @if (IsOpen)
+            {
+                <span>Basket</span>
+            }
+        </NavLink>
+
+        <NavLink href="/favorite" class="nav-item">
+            <i class="bi bi-heart"></i>
+
+            @if (IsOpen)
+            {
+                <span>Favorite</span>
+            }
+        </NavLink>
+
+        <NavLink href="/account" class="nav-item">
+            <i class="bi bi-person"></i>
+
+            @if (IsOpen)
+            {
+                <span>Account</span>
+            }
+        </NavLink>
+
+    </nav>
+
+</div>
+
+@code {
+
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public EventCallback ToggleSidebarClicked { get; set; }
+
+    async Task ToggleSidebar()
+    {
+        await ToggleSidebarClicked.InvokeAsync();
+    }
+}
