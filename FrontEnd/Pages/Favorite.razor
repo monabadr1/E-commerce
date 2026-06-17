@@ -26,13 +26,13 @@
 
     </div>
 
-    @if (favoriteItems == null)
+    @if (isLoading)
     {
         <div class="text-center py-5">
             <div class="spinner-border text-dark"></div>
         </div>
     }
-    else if (!favoriteItems.Any())
+    else if ((isLoggedIn && (wishList == null || !wishList.wishListItems.Any())) || (!isLoggedIn && !favoriteItems.Any()))
     {
         <div class="card border-0 shadow-sm rounded-4 p-5 text-center">
 
