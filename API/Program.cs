@@ -122,10 +122,10 @@ using (var scope = app.Services.CreateScope())
     {
         db.users.Add(new Domain.Entities.User
         {
-            Email="Admin@ecommerce.com",
+            Email="",
             Name="System",
             Role="Admin",
-            PasswordHash=BCrypt.Net.BCrypt.HashPassword("Admin@ecommerce")
+            PasswordHash=BCrypt.Net.BCrypt.HashPassword("")
         });
         db.SaveChanges();
     }
