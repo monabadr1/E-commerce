@@ -1,5 +1,6 @@
 ﻿using Infrastructure.IService;
 using Microsoft.AspNetCore.Mvc;
+using Shared;
 namespace API.Controllers
 {
     [ApiController]
@@ -44,8 +45,22 @@ namespace API.Controllers
             var category = await _categoryService.GetByIdCategoryAsync(categoryId);
             return Ok(category);
         }
+        [HttpPost]
 
-       
+        public async Task <IActionResult> AddCategoryAsync(CreatecategoryDto category)
+        {
+            await _categoryService.AddCategoryAsync(category);
+            return Ok("add to catgory successfuly");  
+        }
+        [HttpDelete]
+        public async Task<IActionResult> DeletCategoryAsync(int id)
+        {
+            await _categoryService.DeletCategoryAsync(id);
+            return Ok("add to catgory successfuly");
+        }
+
+
+
 
     }
 }

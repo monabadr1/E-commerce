@@ -1,9 +1,11 @@
 ﻿using Infrastructure.IService;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Shared;
 namespace API.Controllers
 {
+    [Authorize(Roles = "User")]
     [ApiController]
     [Route("api/Checkout")]
     public class CheckOutController:ControllerBase

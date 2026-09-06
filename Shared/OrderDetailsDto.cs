@@ -10,6 +10,8 @@ namespace Shared
     {
         public int OrderId { get; set; }
         public int UserId { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
+        public string CustomerEmail { get; set; } = string.Empty;
         public decimal TotalPrice { get; set; }
         public string? Address { get; set; }
         public string? City { get; set; }

@@ -1,0 +1,968 @@
+﻿@page "/admin/dashboard"
+
+@using Shared
+@using FrontEnd.Consumer
+@inject AdminOrderConsumer adminOrderConsumer
+@inject AdminProductConsumer adminProductConsumer
+@inject CategoryConsumer categoryConsumer
+@inject OrderConsumer orderConsumer
+@inject DiscountConsumer discountConsumer
+@inject ProductConsumer ProductConsumer
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
+
+@attribute [Authorize(Roles = "Admin")]
+
+<div class="container-fluid py-4 px-lg-5">
+
+    <div class="page-main-title mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <h2 class="fw-bold mb-0">Admin Dashboard</h2>
+
+            <button class="btn btn-outline-danger btn-sm px-3 rounded-3" @onclick="Logout">
+                <i class="bi bi-box-arrow-right me-1"></i> Logout
+            </button>
+        </div>
+        <p class="text-muted small mb-0">Manage orders, products, categories, and discounts in one place.</p>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="custom-tabs-container mb-4 pb-3 border-bottom d-flex gap-2 flex-wrap">
+        <button class="custom-tab-btn @(activeTab == "orders" ? "active" : "")"
+                @onclick='() => activeTab = "orders"'>
+            <i class="bi bi-box-seam me-1"></i>
+            <span>Orders Management</span>
+        </button>
+
+        <button class="custom-tab-btn @(activeTab == "addProduct" ? "active" : "")"
+                @onclick='() => activeTab = "addProduct"'>
+            <i class="bi bi-plus-circle me-1"></i>
+            <span>Add New Product</span>
+        </button>
+
+        <button class="custom-tab-btn @(activeTab == "addSubCategory" ? "active" : "")"
+                @onclick='() => activeTab = "addSubCategory"'>
+            <i class="bi bi-folder-plus me-1"></i>
+            <span>Add Subcategory</span>
+        </button>
+
+        <button class="custom-tab-btn @(activeTab == "addDiscount" ? "active" : "")"
+                @onclick='() => activeTab = "addDiscount"'>
+            <i class="bi bi-percent me-1"></i>
+            <span>Create Discount</span>
+        </button>
+    </div>
+
+    <!-- Alerts Notification -->
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@successMessage
+            <button type="button" class="btn-close" @onclick='() => successMessage = ""'></button>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMessage
+            <button type="button" class="btn-close" @onclick='() => errorMessage = ""'></button>
+        </div>
+    }
+
+    <!-- TAB 1: ORDERS MANAGEMENT -->
+    @if (activeTab == "orders")
+    {
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Recent Orders</h5>
+                <button class="btn btn-sm btn-theme rounded-3" @onclick="LoadOrders">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                </button>
+            </div>
+
+            @if (isLoadingOrders)
+            {
+                <div class="text-center py-5">
+                    <div class="spinner-border custom-spinner mb-2"></div>
+                    <p class="text-muted small">Loading orders...</p>
+                </div>
+            }
+            else if (orders == null || !orders.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <p class="mb-0">No orders found.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table custom-theme-table align-middle">
+                        <thead class="custom-table-header">
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Date</th>
+                                <th>Total Price</th>
+                                <th>Current Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in orders)
+                            {
+                                <tr>
+                                    <td class="fw-bold">#@order.OrderId</td>
+                                    <td class="small text-muted">@order.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")</td>
+                                    <td class="fw-bold text-theme">@order.TotalPrice EGP</td>
+                                    <td>
+                                        <span class="badge @GetStatusBadgeClass(order.Status) px-3 py-2 rounded-pill">
+                                            @order.Status
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm gap-1">
+                                            <button class="btn btn-outline-dark rounded-2"
+                                                    @onclick="() => ViewOrderDetails(order.OrderId)">
+                                                <i class="bi bi-eye me-1"></i> Details
+                                            </button>
+                                            <button class="btn btn-outline-success rounded-2"
+                                                    @onclick="() => ConfirmOrder(order.OrderId)"
+                                                    disabled="@(order.Status == "Confirmed")">
+                                                Confirm
+                                            </button>
+                                            <button class="btn btn-outline-primary rounded-2"
+                                                    @onclick="() => CollectOrder(order.OrderId)">
+                                                Collect
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- TAB 2: ADD PRODUCT -->
+    @if (activeTab == "addProduct")
+    {
+        <div class="card border-0 shadow-sm rounded-4 p-4" style="max-width: 800px;">
+            <h5 class="fw-bold mb-4">Add New Product</h5>
+
+            <EditForm Model="@newProduct" OnValidSubmit="HandleAddProduct">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger small mb-3" />
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">Product Name</label>
+                    <InputText class="form-control rounded-3 py-2" @bind-Value="newProduct.Name" placeholder="e.g. Oversized T-Shirt" />
+                    <ValidationMessage For="@(() => newProduct.Name)" class="text-danger small" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">Description</label>
+                    <InputTextArea class="form-control rounded-3 py-2" @bind-Value="newProduct.Description" rows="3" placeholder="Enter product details..." />
+                    <ValidationMessage For="@(() => newProduct.Description)" class="text-danger small" />
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Price (EGP)</label>
+                        <InputNumber class="form-control rounded-3 py-2" @bind-Value="newProduct.Price" />
+                        <ValidationMessage For="@(() => newProduct.Price)" class="text-danger small" />
+                    </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold text-muted">Product Color</label>
+                    <InputText class="form-control rounded-3 py-2"
+                               @bind-Value="newProduct.Color"
+                               placeholder="e.g. Black, White, Red..." />
+                    <ValidationMessage For="@(() => newProduct.Color)" class="text-danger small" />
+                </div>
+                </div>
+
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Main Category</label>
+                        <select class="form-select rounded-3 py-2" value="@selectedMainCategoryId" @onchange="OnMainCategoryChanged">
+                            <option value="0">-- Select Main Category --</option>
+                            @if (mainCategories != null)
+                            {
+                                @foreach (var cat in mainCategories)
+                                {
+                                    <option value="@cat.CategoryId">@cat.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Subcategory</label>
+                        <select class="form-select rounded-3 py-2"
+                                value="@newProduct.CategoryId"
+                                @onchange="OnSubCategoryChanged"
+                                disabled="@(selectedMainCategoryId == 0)">
+                            <option value="0">-- Select Subcategory --</option>
+                            @if (subCategories != null)
+                            {
+                                @foreach (var sub in subCategories)
+                                {
+                                    <option value="@sub.CategoryId">@sub.Name</option>
+                                }
+                            }
+                        </select>
+                        <ValidationMessage For="@(() => newProduct.CategoryId)" class="text-danger small" />
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-theme w-100 py-2.5 rounded-3 fw-bold mt-3" disabled="@isSubmitting">
+                    @if (isSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        <span>Saving...</span>
+                    }
+                    else
+                    {
+                        <span><i class="bi bi-plus-lg me-1"></i> Add Product</span>
+                    }
+                </button>
+            </EditForm>
+        </div>
+    }
+
+    <!-- TAB 3: ADD SUBCATEGORY -->
+    @if (activeTab == "addSubCategory")
+    {
+        <div class="card border-0 shadow-sm rounded-4 p-4" style="max-width: 650px;">
+            <h5 class="fw-bold mb-4">
+                <i class="bi bi-folder-plus text-theme me-2"></i>Add New Subcategory
+            </h5>
+
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-muted">Main Category (Parent)</label>
+                <select class="form-select rounded-3 py-2" @bind="newSubCategoryParentId">
+                    <option value="0">-- Select Main Category --</option>
+                    @if (mainCategories != null)
+                    {
+                        @foreach (var cat in mainCategories)
+                        {
+                            <option value="@cat.CategoryId">@cat.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-muted">Subcategory Name</label>
+                <input type="text"
+                       class="form-control rounded-3 py-2"
+                       @bind="newSubCategoryName"
+                       placeholder="e.g. Dresses, Hoodies, Accessories..." />
+            </div>
+
+            <button type="button"
+                    class="btn btn-theme w-100 py-2.5 rounded-3 fw-bold mt-2"
+                    @onclick="HandleAddSubCategory"
+                    disabled="@isSubmittingSubCategory">
+                @if (isSubmittingSubCategory)
+                {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    <span>Saving Subcategory...</span>
+                }
+                else
+                {
+                    <span><i class="bi bi-plus-lg me-1"></i> Save Subcategory</span>
+                }
+            </button>
+        </div>
+    }
+
+    <!-- TAB 4: CREATE DISCOUNT -->
+    @if (activeTab == "addDiscount")
+    {
+        <div class="card border-0 shadow-sm rounded-4 p-4" style="max-width: 850px;">
+            <h5 class="fw-bold mb-4"><i class="bi bi-percent text-theme me-2"></i>Create New Discount</h5>
+
+            <EditForm Model="@newDiscount" OnValidSubmit="HandleCreateDiscount">
+                <DataAnnotationsValidator />
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Discount Name / Offer Title</label>
+                        <InputText class="form-control rounded-3 py-2" @bind-Value="newDiscount.Name" placeholder="e.g. Summer Offer 20%" />
+                        <ValidationMessage For="@(() => newDiscount.Name)" class="text-danger small" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Discount Percentage (%)</label>
+                        <InputNumber class="form-control rounded-3 py-2" @bind-Value="newDiscount.Percentage" placeholder="e.g. 15" />
+                        <ValidationMessage For="@(() => newDiscount.Percentage)" class="text-danger small" />
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Start Date</label>
+                        <InputDate class="form-control rounded-3 py-2" @bind-Value="newDiscount.StartDate" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">End Date</label>
+                        <InputDate class="form-control rounded-3 py-2" @bind-Value="newDiscount.EndDate" />
+                    </div>
+                </div>
+
+                <hr class="my-4" />
+
+                <h6 class="fw-bold text-theme mb-3"><i class="bi bi-funnel me-2"></i>Filter Products by Categories</h6>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted mb-1">Main Categories (Select Multiple)</label>
+                        <div class="border rounded-3 p-3 bg-light" style="max-height: 180px; overflow-y: auto;">
+                            @if (mainCategories != null && mainCategories.Any())
+                            {
+                                @foreach (var cat in mainCategories)
+                                {
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input" type="checkbox"
+                                               id="discount-main-cat-@cat.CategoryId"
+                                               checked="@selectedMainCategoryIds.Contains(cat.CategoryId)"
+                                               @onchange="@(e => ToggleMainCategorySelection(cat.CategoryId, e.Value))" />
+                                        <label class="form-check-label small fw-semibold" for="discount-main-cat-@cat.CategoryId">
+                                            @cat.Name
+                                        </label>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <p class="text-muted small mb-0">No main categories found.</p>
+                            }
+                        </div>
+                        <small class="text-muted">Selected: <strong>@selectedMainCategoryIds.Count</strong></small>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted mb-1">Subcategories (Select Multiple)</label>
+                        <div class="border rounded-3 p-3 bg-light" style="max-height: 180px; overflow-y: auto;">
+                            @if (discountSubCategories != null && discountSubCategories.Any())
+                            {
+                                @foreach (var sub in discountSubCategories)
+                                {
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input" type="checkbox"
+                                               id="discount-sub-cat-@sub.CategoryId"
+                                               checked="@selectedSubCategoryIds.Contains(sub.CategoryId)"
+                                               @onchange="@(e => ToggleSubCategorySelection(sub.CategoryId, e.Value))" />
+                                        <label class="form-check-label small fw-semibold" for="discount-sub-cat-@sub.CategoryId">
+                                            @sub.Name
+                                        </label>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <p class="text-muted small mb-0">Select Main Category first.</p>
+                            }
+                        </div>
+                        <small class="text-muted">Selected: <strong>@selectedSubCategoryIds.Count</strong></small>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label small fw-bold text-muted mb-0">Select Target Products</label>
+                        @if (filteredDiscountProducts != null && filteredDiscountProducts.Any())
+                        {
+                            <button type="button" class="btn btn-link btn-sm text-decoration-none p-0" @onclick="SelectAllDiscountProducts">
+                                Select All Filtered
+                            </button>
+                        }
+                    </div>
+
+                    <div class="border rounded-3 p-3 bg-light" style="max-height: 280px; overflow-y: auto;">
+                        @if (isLoadingDiscountProducts)
+                        {
+                            <div class="text-center py-3">
+                                <div class="spinner-border spinner-border-sm custom-spinner me-2"></div>
+                                <span class="text-muted small">Loading products...</span>
+                            </div>
+                        }
+                        else if (filteredDiscountProducts == null || !filteredDiscountProducts.Any())
+                        {
+                            <p class="text-muted small mb-0 text-center py-2">No products found for the selected categories.</p>
+                        }
+                        else
+                        {
+                            @foreach (var prod in filteredDiscountProducts)
+                            {
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox"
+                                           id="prod-discount-@prod.ProductId"
+                                           checked="@newDiscount.SelectedProductIds.Contains(prod.ProductId)"
+                                           @onchange="@(e => ToggleProductDiscountSelection(prod.ProductId, e.Value))" />
+                                    <label class="form-check-label ms-2 small d-flex justify-content-between align-items-center" for="prod-discount-@prod.ProductId">
+                                        <span class="fw-semibold text-dark">@prod.Name</span>
+                                        <span class="badge bg-white text-dark border">@prod.Price EGP</span>
+                                    </label>
+                                </div>
+                            }
+                        }
+                    </div>
+                    <small class="text-muted">Selected products count: <strong>@newDiscount.SelectedProductIds.Count</strong></small>
+                </div>
+
+                <button type="submit" class="btn btn-theme w-100 py-2.5 rounded-3 fw-bold mt-2" disabled="@isSubmitting">
+                    @if (isSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        <span>Applying Discount...</span>
+                    }
+                    else
+                    {
+                        <span><i class="bi bi-check2-circle me-1"></i> Apply & Save Discount</span>
+                    }
+                </button>
+            </EditForm>
+        </div>
+    }
+</div>
+
+<!-- ORDER DETAILS MODAL -->
+@if (showDetailsModal)
+{
+    <div class="modal fade show d-block" style="background: rgba(0,0,0,0.5);" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-bottom pb-3">
+                    <h5 class="modal-title fw-bold text-dark">
+                        <i class="bi bi-receipt me-2 text-primary"></i>Order Details #@(selectedOrderDetails?.OrderId)
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseDetailsModal"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    @if (isLoadingDetails)
+                    {
+                        <div class="text-center py-5">
+                            <div class="spinner-border custom-spinner mb-2"></div>
+                            <p class="text-muted small">Fetching customer & order details...</p>
+                        </div>
+                    }
+                    else if (selectedOrderDetails != null)
+                    {
+                        <div class="card border-0 bg-light rounded-3 p-3 mb-4">
+                            <h6 class="fw-bold mb-3 text-theme"><i class="bi bi-person-vcard me-2"></i>Customer Information</h6>
+                            <div class="row g-3 small">
+                                <div class="col-md-6">
+                                    <span class="text-muted d-block">Full Name</span>
+                                    <span class="fw-bold text-dark">@(string.IsNullOrEmpty(selectedOrderDetails.CustomerName) ? "N/A" : selectedOrderDetails.CustomerName)</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <span class="text-muted d-block">Email Address</span>
+                                    <span class="fw-bold text-dark">@(string.IsNullOrEmpty(selectedOrderDetails.CustomerEmail) ? "N/A" : selectedOrderDetails.CustomerEmail)</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <span class="text-muted d-block">Phone Number</span>
+                                    <span class="fw-bold text-dark">@(string.IsNullOrEmpty(selectedOrderDetails.Phone) ? "N/A" : selectedOrderDetails.Phone)</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <span class="text-muted d-block">City / Address</span>
+                                    <span class="fw-bold text-dark">@selectedOrderDetails.City - @selectedOrderDetails.Address</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-bag me-2"></i>Order Items</h6>
+                        @if (selectedOrderDetails.Items != null && selectedOrderDetails.Items.Any())
+                        {
+                            <div class="overflow-y-auto pe-1 mb-3" style="max-height: 250px;">
+                                @foreach (var item in selectedOrderDetails.Items)
+                                {
+                                    <div class="d-flex align-items-center gap-3 p-3 mb-2 rounded-3 border bg-white">
+                                        <img src="@item.ImageUrl" class="rounded-3 border bg-light" style="width: 55px; height: 55px; object-fit: cover;" />
+                                        <div class="flex-grow-1">
+                                            <h6 class="fw-bold mb-1 text-dark">@item.ProductName</h6>
+                                            <span class="badge bg-secondary-subtle text-dark me-2">Size: @item.Size</span>
+                                            <span class="small text-muted">Qty: @item.Quantity</span>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="fw-bold text-dark d-block">@(item.Price * item.Quantity) EGP</span>
+                                            <small class="text-muted">(@item.Price EGP each)</small>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted small">No items listed for this order.</p>
+                        }
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <span class="fw-bold text-muted">Grand Total</span>
+                            <span class="fs-4 fw-bold text-theme">@selectedOrderDetails.TotalPrice EGP</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-danger text-center my-3">Unable to fetch order information.</p>
+                    }
+                </div>
+
+                <div class="modal-footer border-top-0">
+                    <button type="button" class="btn btn-secondary rounded-3 px-4" @onclick="CloseDetailsModal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string activeTab = "orders";
+    private List<OrderDto>? orders;
+    private List<CategoryDto>? mainCategories;
+    private List<CategoryDto>? subCategories;
+    private int selectedMainCategoryId = 0;
+
+    private CreateProductDto newProduct = new();
+    private OrderDetailsDto? selectedOrderDetails;
+
+    // --- Subcategory Creation State ---
+    private int newSubCategoryParentId = 0;
+    private string newSubCategoryName = "";
+    private bool isSubmittingSubCategory = false;
+
+    // --- Multi-Select Discount State Variables ---
+    private CreateDiscountDto newDiscount = new()
+    {
+        StartDate = DateOnly.FromDateTime(DateTime.Now),
+        EndDate = DateOnly.FromDateTime(DateTime.Now.AddDays(7))
+    };
+    private List<int> selectedMainCategoryIds = new();
+    private List<int> selectedSubCategoryIds = new();
+    private List<CategoryDto>? discountSubCategories;
+    private List<ProductDto>? filteredDiscountProducts;
+    private bool isLoadingDiscountProducts = false;
+
+    private bool isLoadingOrders = true;
+    private bool isSubmitting = false;
+    private bool showDetailsModal = false;
+    private bool isLoadingDetails = false;
+
+    private string successMessage = "";
+    private string errorMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity == null || !user.Identity.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login?returnUrl=/admin/dashboard");
+            return;
+        }
+
+        if (!user.IsInRole("Admin"))
+        {
+            Nav.NavigateTo("/");
+            return;
+        }
+        await LoadOrders();
+        await LoadMainCategories();
+    }
+
+    private async Task LoadOrders()
+    {
+        isLoadingOrders = true;
+        try
+        {
+            orders = await adminOrderConsumer.AdminGetOrderAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load orders: {ex.Message}";
+        }
+        finally
+        {
+            isLoadingOrders = false;
+        }
+    }
+
+    private async Task LoadMainCategories()
+    {
+        try
+        {
+            mainCategories = (await categoryConsumer.GetMainCategoryAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load categories: {ex.Message}";
+        }
+    }
+
+    private async Task HandleAddSubCategory()
+    {
+        if (newSubCategoryParentId <= 0)
+        {
+            errorMessage = "Please select a parent main category.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(newSubCategoryName))
+        {
+            errorMessage = "Please enter a valid subcategory name.";
+            return;
+        }
+
+        isSubmittingSubCategory = true;
+        errorMessage = "";
+        successMessage = "";
+
+        try
+        {
+            var subCategoryDto = new CreatecategoryDto
+            {
+                Name = newSubCategoryName.Trim(),
+                ParentCategoryId = newSubCategoryParentId
+            };
+
+            await categoryConsumer.AddCategoryAsync(subCategoryDto);
+
+            successMessage = $"Subcategory '{newSubCategoryName}' added successfully!";
+
+            if (selectedMainCategoryId == newSubCategoryParentId)
+            {
+                var result = await categoryConsumer.GetSubCategoryAsync(selectedMainCategoryId);
+                if (result != null)
+                {
+                    subCategories = result.ToList();
+                }
+            }
+
+            newSubCategoryName = "";
+            newSubCategoryParentId = 0;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to add subcategory: {ex.Message}";
+        }
+        finally
+        {
+            isSubmittingSubCategory = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ViewOrderDetails(int orderId)
+    {
+        showDetailsModal = true;
+        isLoadingDetails = true;
+        selectedOrderDetails = null;
+
+        try
+        {
+            selectedOrderDetails = await orderConsumer.GetOrderAsync(orderId);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to get details: {ex.Message}";
+        }
+        finally
+        {
+            isLoadingDetails = false;
+        }
+    }
+
+    private void CloseDetailsModal()
+    {
+        showDetailsModal = false;
+        selectedOrderDetails = null;
+    }
+
+    private async Task ConfirmOrder(int orderId)
+    {
+        try
+        {
+            await adminOrderConsumer.ConfirmOrderAsync(orderId);
+            successMessage = $"Order #{orderId} confirmed successfully!";
+            await LoadOrders();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private async Task CollectOrder(int orderId)
+    {
+        try
+        {
+            await adminOrderConsumer.CollectOrderAsync(orderId);
+            successMessage = $"Order #{orderId} marked as collected!";
+            await LoadOrders();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private async Task HandleAddProduct()
+    {
+        if (newProduct.CategoryId <= 0)
+        {
+            errorMessage = "Please select a valid subcategory.";
+            return;
+        }
+
+        isSubmitting = true;
+        errorMessage = "";
+        successMessage = "";
+
+        try
+        {
+            await adminProductConsumer.AddProductAsync(newProduct);
+            successMessage = "Product added successfully!";
+            newProduct = new();
+            selectedMainCategoryId = 0;
+            subCategories?.Clear();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to add product: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnMainCategoryChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int mainId))
+        {
+            selectedMainCategoryId = mainId;
+            newProduct.CategoryId = 0;
+            subCategories = new List<CategoryDto>();
+
+            if (selectedMainCategoryId > 0)
+            {
+                var result = await categoryConsumer.GetSubCategoryAsync(selectedMainCategoryId);
+                if (result != null)
+                {
+                    subCategories = result.ToList();
+                }
+            }
+            StateHasChanged();
+        }
+    }
+
+    private void OnSubCategoryChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int subId))
+        {
+            newProduct.CategoryId = subId;
+            StateHasChanged();
+        }
+    }
+
+    // --- DISCOUNT MULTI-SELECT HANDLERS ---
+
+    private async Task ToggleMainCategorySelection(int categoryId, object? isChecked)
+    {
+        if (isChecked is bool check && check)
+        {
+            if (!selectedMainCategoryIds.Contains(categoryId))
+                selectedMainCategoryIds.Add(categoryId);
+        }
+        else
+        {
+            selectedMainCategoryIds.Remove(categoryId);
+        }
+
+        await RefreshSubCategoriesAndProducts();
+    }
+
+    private async Task ToggleSubCategorySelection(int subCategoryId, object? isChecked)
+    {
+        if (isChecked is bool check && check)
+        {
+            if (!selectedSubCategoryIds.Contains(subCategoryId))
+                selectedSubCategoryIds.Add(subCategoryId);
+        }
+        else
+        {
+            selectedSubCategoryIds.Remove(subCategoryId);
+        }
+
+        await FilterProductsBySelectedCategories();
+    }
+
+    private async Task RefreshSubCategoriesAndProducts()
+    {
+        discountSubCategories = new List<CategoryDto>();
+
+        if (selectedMainCategoryIds.Any())
+        {
+            foreach (var mainId in selectedMainCategoryIds)
+            {
+                try
+                {
+                    var subs = await categoryConsumer.GetSubCategoryAsync(mainId);
+                    if (subs != null)
+                    {
+                        foreach (var sub in subs)
+                        {
+                            if (!discountSubCategories.Any(x => x.CategoryId == sub.CategoryId))
+                                discountSubCategories.Add(sub);
+                        }
+                    }
+                }
+                catch { }
+            }
+        }
+
+        var validSubIds = discountSubCategories.Select(s => s.CategoryId).ToList();
+        selectedSubCategoryIds = selectedSubCategoryIds.Where(id => validSubIds.Contains(id)).ToList();
+
+        await FilterProductsBySelectedCategories();
+    }
+
+    private async Task FilterProductsBySelectedCategories()
+    {
+        isLoadingDiscountProducts = true;
+        filteredDiscountProducts = new List<ProductDto>();
+
+        try
+        {
+            List<ProductDto> tempProducts = new();
+
+            if (selectedSubCategoryIds.Any())
+            {
+                foreach (var subId in selectedSubCategoryIds)
+                {
+                    var prods = await ProductConsumer.GetproductByCategoryIdAsync(subId);
+                    if (prods != null)
+                    {
+                        tempProducts.AddRange(prods);
+                    }
+                }
+            }
+            else if (selectedMainCategoryIds.Any())
+            {
+                foreach (var mainId in selectedMainCategoryIds)
+                {
+                    var prods = await ProductConsumer.GetProductsByMainCategoryAsync(mainId);
+                    if (prods != null)
+                    {
+                        tempProducts.AddRange(prods);
+                    }
+                }
+            }
+
+            filteredDiscountProducts = tempProducts.GroupBy(p => p.ProductId).Select(g => g.First()).ToList();
+        }
+        catch
+        {
+            filteredDiscountProducts = new List<ProductDto>();
+        }
+        finally
+        {
+            isLoadingDiscountProducts = false;
+        }
+    }
+
+    private void ToggleProductDiscountSelection(int productId, object? isChecked)
+    {
+        if (isChecked is bool check && check)
+        {
+            if (!newDiscount.SelectedProductIds.Contains(productId))
+                newDiscount.SelectedProductIds.Add(productId);
+        }
+        else
+        {
+            newDiscount.SelectedProductIds.Remove(productId);
+        }
+    }
+
+    private void SelectAllDiscountProducts()
+    {
+        if (filteredDiscountProducts != null)
+        {
+            foreach (var prod in filteredDiscountProducts)
+            {
+                if (!newDiscount.SelectedProductIds.Contains(prod.ProductId))
+                    newDiscount.SelectedProductIds.Add(prod.ProductId);
+            }
+        }
+    }
+
+    private async Task HandleCreateDiscount()
+    {
+        if (!newDiscount.SelectedProductIds.Any())
+        {
+            errorMessage = "Please select at least one product for this discount.";
+            return;
+        }
+
+        isSubmitting = true;
+        errorMessage = "";
+        successMessage = "";
+
+        try
+        {
+            var result = await discountConsumer.CreateDiscountAsync(newDiscount);
+            if (result)
+            {
+                successMessage = "Discount created and applied to selected products successfully!";
+                newDiscount = new()
+                {
+                    StartDate = DateOnly.FromDateTime(DateTime.Now),
+                    EndDate = DateOnly.FromDateTime(DateTime.Now.AddDays(7))
+                };
+                selectedMainCategoryIds.Clear();
+                selectedSubCategoryIds.Clear();
+                discountSubCategories?.Clear();
+                filteredDiscountProducts?.Clear();
+            }
+            else
+            {
+                errorMessage = "Failed to create discount. Please check inputs.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status?.ToLower() switch
+        {
+            "processing" => "bg-warning-subtle text-warning border border-warning",
+            "confirmed" => "bg-success-subtle text-success border border-success",
+            "collected" => "bg-info-subtle text-info border border-info",
+            _ => "bg-secondary-subtle text-dark border"
+        };
+    }
+
+    async Task Logout()
+    {
+        if (AuthStateProvider is CustomAuthStateProvider customAuthProvider)
+        {
+            await customAuthProvider.MarkUserAsLoggedOut();
+        }
+        Nav.NavigateTo("/");
+    }
+}

@@ -1,82 +1,100 @@
 ﻿using Domain.Entities;
 using Infrastructure.IRepository;
 using Infrastructure.IService;
-using Microsoft.Identity.Client;
+using Microsoft.EntityFrameworkCore;
 using Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Infrastructure.Service
 {
-    public class CheckoutService:ICheckoutService
+    public class CheckoutService : ICheckoutService
     {
         private readonly ICartRepository _cartRepository;
         private readonly IOrderRepository _orderRepository;
         private readonly IProductVariantRepository _productVariantRepository;
-        public CheckoutService(ICartRepository cartRepository, IOrderRepository orderRepository,IProductVariantRepository productVariantRepository)
+        private readonly AppDbContext _context; 
+
+        public CheckoutService(
+            ICartRepository cartRepository,
+            IOrderRepository orderRepository,
+            IProductVariantRepository productVariantRepository,
+            AppDbContext context)
         {
             _cartRepository = cartRepository;
             _orderRepository = orderRepository;
             _productVariantRepository = productVariantRepository;
+            _context = context;
         }
-      
+
         public async Task CheckoutAsync(int userId, CheckoutDto dto)
         {
-            var cart=await _cartRepository.GetCartByUserIdAsync(userId);
-            if (cart == null)
-                throw new Exception("cart is empty ");
-            if (cart.CartItems == null)
-                throw new Exception("cart has no items");
+            var cart = await _cartRepository.GetCartByUserIdAsync(userId);
+            if (cart == null || cart.CartItems == null || !cart.CartItems.Any())
+                throw new Exception("Cart is empty or has no items.");
 
-            decimal totelprice = 0;
-            foreach (var items in cart.CartItems)
+            decimal totalPrice = 0;
+
+            foreach (var item in cart.CartItems)
             {
-                var variant = await _productVariantRepository.GetByIdAsync(items.ProductVariantId);
+                var variant = await _productVariantRepository.GetByIdAsync(item.ProductVariantId);
                 if (variant == null)
-                    throw new Exception("product variant not found");
-                if (items.Quantity > variant.StockQuantity)
-                    throw new Exception("product is unavalible");
+                    throw new Exception($"Product variant with ID {item.ProductVariantId} not found.");
 
-                totelprice += items.Quantity * items.Price;
+                if (item.Quantity > variant.StockQuantity)
+                    throw new Exception($"Product '{variant.Product?.Name}' is out of stock or insufficient quantity.");
 
+                totalPrice += item.Quantity * item.Price;
             }
+
             var order = new Order
             {
                 UserId = userId,
                 Phone = dto.Phone,
                 Address = dto.Address,
+                City = dto.City,
                 CreatedAt = DateTime.UtcNow,
-                TotalPrice = totelprice,
-                Status = OrderStatus.Processing,
-                City=dto.City
-
+                TotalPrice = totalPrice,
+                Status = OrderStatus.Processing
             };
+
             await _orderRepository.AddOrderAsync(order);
 
-            foreach(var items in cart.CartItems)
+            var payment = new Payment
             {
-                var variant = await _productVariantRepository.GetByIdAsync(items.ProductVariantId);
-                if (variant == null)
-                    throw new Exception("product variant not found");
+                OrderId = order.OrderId,
+                PaymentMethod = dto.PaymentMethod,
+                PaymentStatus = dto.PaymentMethod == "CashOnDelivery" ? "Pending" : "Completed",
+                PaidAt = dto.PaymentMethod == "CashOnDelivery" ? null : DateTime.UtcNow,
+                TransactionId = dto.PaymentMethod == "CashOnDelivery"
+                    ? null
+                    : $"TXN-{Guid.NewGuid().ToString().Substring(0, 8).ToUpper()}"
+            };
+
+            await _context.payments.AddAsync(payment);
+            await _context.SaveChangesAsync();
+
+            foreach (var item in cart.CartItems)
+            {
+                var variant = await _productVariantRepository.GetByIdAsync(item.ProductVariantId);
+
                 var orderItem = new OrderItem
                 {
                     OrderId = order.OrderId,
-                    Price = items.Price,
-                    ProductVariantId = items.ProductVariantId,
-                    Quantity = items.Quantity,
+                    Price = item.Price,
+                    ProductVariantId = item.ProductVariantId,
+                    Quantity = item.Quantity,
                 };
 
                 await _orderRepository.AddOrderItemAsync(orderItem);
 
-                variant.StockQuantity -= items.Quantity;
+                variant!.StockQuantity -= item.Quantity;
                 await _productVariantRepository.UpdateVariantAsync(variant);
             }
+
             await _cartRepository.ClearCartAsync(cart.CartId);
-
         }
-
     }
 }

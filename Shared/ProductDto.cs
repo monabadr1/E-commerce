@@ -13,12 +13,17 @@ namespace Shared
         public string? Description { get; set; }
 
         public int CategoryId { get; set; }
+       public string? CategoryName { get; set; }
 
         public List<string> Images { get; set; } = new();
 
         public decimal Price { get; set; }
 
         public List<string> Colors { get; set; } = new();
+
+        public decimal OriginalPrice {  get; set; }
+
+        public decimal DiscountPercentage {  get; set; }
 
         
 

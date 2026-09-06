@@ -22,7 +22,10 @@ namespace Infrastructure.Repository
         {
 
             return await _context.products
+                .Include(p=>p.Discount)
                 .Include(p=>p.Category)
+                .Include(p=>p.ProductVariants)
+                .Include(p=>p.ProductImages)
                 .ToListAsync();
         }
 
@@ -33,6 +36,7 @@ namespace Infrastructure.Repository
                 .Include(p=>p.ProductImages)
                 .Include(p=>p.Reviews)
                 .Include(p=>p.ProductVariants)
+                .Include(p=>p.Discount)
                 .FirstOrDefaultAsync(p=>p.ProductId == id);
         }
 
@@ -42,6 +46,8 @@ namespace Infrastructure.Repository
               .Where(p => p.CategoryId == categoryId)
               .Include(p=>p.ProductVariants)
               .Include(p=>p.ProductImages)
+              .Include(p=>p.Discount)
+              .Include(p=>p.Category)
               .ToListAsync();
         }
         public async Task<IEnumerable<Product>> GetByMainCategoryIdAsync(int mainCategoryId)
@@ -49,9 +55,11 @@ namespace Infrastructure.Repository
             return await _context.products
                 .Include(p => p.ProductVariants)
                 .Include(p=>p.ProductImages)
+                .Include(p=>p.Category)
+                .Include(p => p.Discount)
                 .Where(p => _context.categories.Any(c =>
                 c.ParentCategoryId == mainCategoryId &&
-                c.CategoryId == p.CategoryId)).ToListAsync();
+                c.CategoryId == p.CategoryId)|| p.CategoryId==mainCategoryId).ToListAsync();
         }
 
         public async Task AddAsync(Product product)

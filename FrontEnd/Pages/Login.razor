@@ -4,6 +4,8 @@
 @using FrontEnd.Service
 @using Shared
 @using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+
 @inject AuthConsumer AuthConsumer
 @inject CartStateService CartState
 @inject FavoriteStateService favoriteState
@@ -13,72 +15,122 @@
 @inject AuthenticationStateProvider AuthStateProvider
 
 <div class="login-container">
-
     <div class="login-card">
-
         <h2>Welcome Back</h2>
 
-        <input @bind="model.Email"
-               placeholder="Email" />
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger border-0 small mb-3">
+                @errorMessage
+            </div>
+        }
 
-        <input @bind="model.Password"
-               type="password"
-               placeholder="Password" />
+        <EditForm Model="@model" OnValidSubmit="sign_up">
+            <DataAnnotationsValidator />
 
-        <button @onclick="sign_up">
-            Login
-        </button>
+            <div class="mb-3">
+                <InputText @bind-Value="model.Email"
+                           placeholder="Email"
+                           class="form-control"
+                           type="email" />
+                <ValidationMessage For="@(() => model.Email)" class="text-danger small mt-1 d-block" />
+            </div>
 
-        <p>
+            <div class="mb-3">
+                <InputText @bind-Value="model.Password"
+                           type="password"
+                           placeholder="Password"
+                           class="form-control" />
+                <ValidationMessage For="@(() => model.Password)" class="text-danger small mt-1 d-block" />
+            </div>
+
+            <button type="submit" class="btn btn-theme w-100 fw-bold mt-2" disabled="@isProcessing">
+                @if (isProcessing)
+                {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    <span>Logging in...</span>
+                }
+                else
+                {
+                    <span>Login</span>
+                }
+            </button>
+        </EditForm>
+
+        <p class="mt-3 text-center small text-muted">
             Don't have an account?
-            <a href="/register">Register</a>
+            <a href="/register" class="text-theme fw-bold text-decoration-none">Register</a>
         </p>
-
     </div>
-
 </div>
 
 @code {
-
     LoginDto model = new();
+    private bool isProcessing = false;
+    private string errorMessage = "";
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        if (authState.User.Identity is not null && authState.User.Identity.IsAuthenticated)
+        var user = authState.User;
+
+        if (user.Identity is not null && user.Identity.IsAuthenticated)
         {
-            Nav.NavigateTo("/profile");
+            RedirectUserBasedOnRole(user);
         }
     }
 
     async Task sign_up()
     {
-        var response = await AuthConsumer.LoginAsync(model);
+        isProcessing = true;
+        errorMessage = "";
 
-        if (response != null)
+        try
         {
-            await ((CustomAuthStateProvider)AuthStateProvider).MarkUserAsAuthenticate(response.Token);
-            var localCartItems = await CartState.GetCartAsync();
-            var favoriteItems = await favoriteState.GetFavoriteAsync();
+            var response = await AuthConsumer.LoginAsync(model);
 
-            if (localCartItems != null && localCartItems.Any())
+            if (response != null)
             {
-                await CartConsumer.SyncCartAsync(localCartItems);
+                await ((CustomAuthStateProvider)AuthStateProvider).MarkUserAsAuthenticate(response.Token);
 
-                await CartState.ClearCartAsync();
-            }
+                var localCartItems = await CartState.GetCartAsync();
+                var favoriteItems = await favoriteState.GetFavoriteAsync();
 
+                if (localCartItems != null && localCartItems.Any())
+                {
+                    await CartConsumer.SyncCartAsync(localCartItems);
+                    await CartState.ClearCartAsync();
+                }
 
-            if (favoriteItems != null && favoriteItems.Any())
-            {
-                await wishListConsumer.SyncWishListAsync(favoriteItems);
-                await favoriteState.ClearFavoriteAsync();
+                if (favoriteItems != null && favoriteItems.Any())
+                {
+                    await wishListConsumer.SyncWishListAsync(favoriteItems);
+                    await favoriteState.ClearFavoriteAsync();
+                }
 
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                RedirectUserBasedOnRole(authState.User);
             }
         }
-        Nav.NavigateTo("/profile");
-
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isProcessing = false;
         }
     }
 
-  
+    private void RedirectUserBasedOnRole(ClaimsPrincipal user)
+    {
+        if (user.IsInRole("Admin") || user.HasClaim(ClaimTypes.Role, "Admin"))
+        {
+            Nav.NavigateTo("/admin/dashboard");
+        }
+        else
+        {
+            Nav.NavigateTo("/profile");
+        }
+    }
+}

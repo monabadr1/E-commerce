@@ -1,28 +1,25 @@
 ﻿@page "/"
 
+@using Shared
 @using FrontEnd.Consumer
 
 @inject ProductConsumer productConsumer
 @inject CategoryConsumer categoryConsumer
+@inject DiscountConsumer discountConsumer
 @inject NavigationManager Nav
 
 <!-- Hero Section -->
-
 <section class="hero-section">
-
-    
     <div class="container">
-
         <div class="row align-items-center min-vh-75">
-
             <div class="col-lg-6">
-
-                <span class="badge bg-dark px-3 py-2 mb-3">
+                <span class="badge bg-theme px-3 py-2 mb-3 tracking-wider text-uppercase">
                     New Collection 2026
                 </span>
 
-                <h1 class="display-2 fw-bold mb-4">
+                <h1 class="display-2 fw-bold mb-4 text-theme">
                     Discover Your
+                    <br />
                     Perfect Style
                 </h1>
 
@@ -32,280 +29,181 @@
                 </p>
 
                 <div class="d-flex gap-3 flex-wrap">
-
-                    <button class="btn btn-dark btn-lg px-5"
+                    <a class="btn btn-theme btn-lg px-5"
                             @onclick="GoToCategories">
-
                         Shop Now
-
-                    </button>
-
+                    </a>
                 </div>
-
             </div>
 
-            <div class="col-lg-6 text-center">
-
+            <div class="col-lg-6 text-center mt-4 mt-lg-0">
                 <img src="images/modelwoman.jpg"
-                     class="img-fluid hero-image shadow-lg" />
-
+                     class="img-fluid hero-image shadow-lg" alt="Fashion Model" />
             </div>
-
         </div>
-
     </div>
-    
-
 </section>
 
-<!-- Features -->
-
-<section class="py-5 bg-light">
-
-    
+<!-- Features Section -->
+<section class="py-5 inner-section-bg border-top border-bottom" style="border-color: var(--theme-border) !important;">
     <div class="container">
-
         <div class="row g-4">
-
             <div class="col-md-4">
-
-                <div class="card border-0 shadow-sm h-100 text-center">
-
+                <div class="card border-0 shadow-sm h-100 text-center p-2">
                     <div class="card-body p-4">
-
-                        <i class="bi bi-truck fs-1 text-dark"></i>
-
-                        <h4 class="mt-3">
+                        <i class="bi bi-truck fs-1 text-theme"></i>
+                        <h4 class="mt-3 fw-bold text-theme">
                             Free Shipping
                         </h4>
-
-                        <p class="text-muted">
+                        <p class="text-muted mb-0">
                             Free delivery for orders over 2500 EGP
                         </p>
-
                     </div>
-
                 </div>
-
             </div>
 
             <div class="col-md-4">
-
-                <div class="card border-0 shadow-sm h-100 text-center">
-
+                <div class="card border-0 shadow-sm h-100 text-center p-2">
                     <div class="card-body p-4">
-
-                        <i class="bi bi-credit-card fs-1 text-dark"></i>
-
-                        <h4 class="mt-3">
+                        <i class="bi bi-credit-card fs-1 text-theme"></i>
+                        <h4 class="mt-3 fw-bold text-theme">
                             Secure Payment
                         </h4>
-
-                        <p class="text-muted">
+                        <p class="text-muted mb-0">
                             Safe and trusted payment methods
                         </p>
-
                     </div>
-
                 </div>
-
             </div>
 
             <div class="col-md-4">
-
-                <div class="card border-0 shadow-sm h-100 text-center">
-
+                <div class="card border-0 shadow-sm h-100 text-center p-2">
                     <div class="card-body p-4">
-
-                        <i class="bi bi-headset fs-1 text-dark"></i>
-
-                        <h4 class="mt-3">
+                        <i class="bi bi-headset fs-1 text-theme"></i>
+                        <h4 class="mt-3 fw-bold text-theme">
                             24/7 Support
                         </h4>
-
-                        <p class="text-muted">
+                        <p class="text-muted mb-0">
                             Our support team is always available
                         </p>
-
                     </div>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
-    
-
 </section>
 
-<!-- Categories -->
-
+<!-- Categories Section -->
 <section id="category" class="py-5">
-
-    
     <div class="container">
-
         <div class="text-center mb-5">
-
-            <h2 class="fw-bold display-5">
-                Shop By Category
-            </h2>
-
-            <p class="text-muted">
-                Choose your favorite collection
-            </p>
-
+            <h2 class="fw-bold display-5 text-theme">Shop By Category</h2>
+            <p class="text-muted">Choose your favorite collection</p>
         </div>
 
         <div class="row g-4">
-
-            <!-- Women -->
-
+            <!-- Women Collection -->
             <div class="col-lg-4">
-
-                <div class="card category-card border-0 shadow-sm h-100">
-
-                    <img src="images/modelwoman.jpg"
-                         class="card-img-top category-image" />
-
-                    <div class="card-body">
-
-                        <span class="badge bg-danger mb-2">
-                            2500+ Products
-                        </span>
-
-                        <h3 class="fw-bold">
-                            Women Collection
-                        </h3>
-
-                        <p class="text-muted">
-                            Dresses, Tops, Skirts, Jeans and more.
-                        </p>
-
-                        <button class="btn btn-dark w-100"
-                                @onclick='() => GoToMainProducts(1)'>
-
-                            Shop Women
-
-                        </button>
-
+                <div class="card category-card border-0 shadow-sm overflow-hidden">
+                    <img src="images/women.jpg" class="card-img-top category-image" alt="Women" />
+                    <div class="card-body p-4 d-flex flex-column justify-content-between">
+                        <div>
+                            <span class="badge bg-theme-light text-theme fw-bold mb-2">2500+ Products</span>
+                            <h3 class="fw-bold text-theme">Women Collection</h3>
+                            <p class="text-muted small mb-4">Dresses, Tops, Skirts, Jeans and more.</p>
+                        </div>
+                        <button class="btn btn-theme w-100 py-2" @onclick='() => GoToMainProducts(1)'>Shop Women</button>
                     </div>
-
                 </div>
-
             </div>
 
-            <!-- Men -->
-
+            <!-- Men Collection -->
             <div class="col-lg-4">
-
-                <div class="card category-card border-0 shadow-sm h-100">
-
-                    <img src="images/modelwoman.jpg"
-                         class="card-img-top category-image" />
-
-                    <div class="card-body">
-
-                        <span class="badge bg-primary mb-2">
-                            1500+ Products
-                        </span>
-
-                        <h3 class="fw-bold">
-                            Men Collection
-                        </h3>
-
-                        <p class="text-muted">
-                            Shirts, T-Shirts, Jeans and Jackets.
-                        </p>
-
-                        <button class="btn btn-dark w-100"
-                                @onclick='() => GoToMainProducts(2)'>
-
-                            Shop Men
-
-                        </button>
-
+                <div class="card category-card border-0 shadow-sm overflow-hidden">
+                    <img src="images/MenModel.jpg" class="card-img-top category-image" alt="Men" />
+                    <div class="card-body p-4 d-flex flex-column justify-content-between">
+                        <div>
+                            <span class="badge bg-theme-light text-theme fw-bold mb-2">1500+ Products</span>
+                            <h3 class="fw-bold text-theme">Men Collection</h3>
+                            <p class="text-muted small mb-4">Shirts, T-Shirts, Jeans and Jackets.</p>
+                        </div>
+                        <button class="btn btn-theme w-100 py-2" @onclick='() => GoToMainProducts(4)'>Shop Men</button>
                     </div>
-
                 </div>
-
             </div>
 
-            <!-- Kids -->
-
+            <!-- Kids Collection -->
             <div class="col-lg-4">
-
-                <div class="card category-card border-0 shadow-sm h-100">
-
-                    <img src="images/modelwoman.jpg"
-                         class="card-img-top category-image" />
-
-                    <div class="card-body">
-
-                        <span class="badge bg-success mb-2">
-                            3000+ Products
-                        </span>
-
-                        <h3 class="fw-bold">
-                            Kids Collection
-                        </h3>
-
-                        <p class="text-muted">
-                            Fashion and accessories for kids.
-                        </p>
-
-                        <button class="btn btn-dark w-100"
-                                @onclick='() => GoToMainProducts(3)'>
-
-                            Shop Kids
-
-                        </button>
-
+                <div class="card category-card border-0 shadow-sm overflow-hidden">
+                    <img src="images/Kids.png" class="card-img-top category-image" alt="Kids" />
+                    <div class="card-body p-4 d-flex flex-column justify-content-between">
+                        <div>
+                            <span class="badge bg-theme-light text-theme fw-bold mb-2">3000+ Products</span>
+                            <h3 class="fw-bold text-theme">Kids Collection</h3>
+                            <p class="text-muted small mb-4">Fashion and accessories for kids.</p>
+                        </div>
+                        <button class="btn btn-theme w-100 py-2" @onclick='() => GoToMainProducts(6)'>Shop Kids</button>
                     </div>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
-    
-
 </section>
 
-<!-- Banner -->
+<!-- Dynamic Banner Section -->
+<section class="py-5 bg-theme text-white text-center shadow-inner">
+    <div class="container py-4">
+        @if (latestDiscount != null)
+        {
+            <h2 class="display-5 fw-bold text-white mb-2">
+                @latestDiscount.Name
+            </h2>
 
-<section class="py-5 bg-dark text-white">
+            <p class="lead text-white-50 mb-4">
+                Limited time offer on selected products
+            </p>
 
-    
-    <div class="container text-center">
+            <button class="btn btn-light btn-lg mt-2 px-4 text-theme fw-bold shadow rounded-pill"
+                    @onclick="GoToSalePage">
+                Shop Sale Now
+            </button>
+        }
+        else
+        {
+            <h2 class="display-5 fw-bold text-white mb-2">
+                Shop Collection
+            </h2>
 
-        <h2 class="display-5 fw-bold">
-            Summer Sale Up To 50% Off
-        </h2>
+            <p class="lead text-white-50 mb-4">
+                Explore our latest trendy arrivals for Women, Men &amp; Kids
+            </p>
 
-        <p class="lead">
-            Limited time offer on selected products
-        </p>
-
-        <button class="btn btn-light btn-lg mt-3"
-                @onclick="GoToCategories">
-
-            Shop Now
-
-        </button>
-
+            <button class="btn btn-light btn-lg mt-2 px-4 text-theme fw-bold shadow rounded-pill"
+                    @onclick="GoToCategories">
+                Shop Collection
+            </button>
+        }
     </div>
-    
-
 </section>
+
+
 
 @code {
+    private DiscountDto? latestDiscount;
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            latestDiscount = await discountConsumer.GetLatestActiveDiscountAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
 
-void GoToCategories()
+    void GoToCategories()
     {
         Nav.NavigateTo("/#category");
     }
@@ -315,5 +213,8 @@ void GoToCategories()
         Nav.NavigateTo($"/productsmain/{id}");
     }
 
-
+    void GoToSalePage()
+    {
+        Nav.NavigateTo("/sale");
+    }
 }

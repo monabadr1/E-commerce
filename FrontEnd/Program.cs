@@ -38,21 +38,59 @@ builder.Services.AddHttpClient<WishListConsumer>(client =>
 {
     client.BaseAddress = new Uri("https://localhost:7027/");
 })
-.AddHttpMessageHandler<AuthMessageHandler>(); 
-builder.Services.AddScoped<AdminCategoryConsumer>();
-builder.Services.AddScoped<AdminOrderConsumer>();
-builder.Services.AddScoped<AdminProductConsumer>();
-builder.Services.AddScoped<AdminProductVariantConsumer>();
-builder.Services.AddScoped<CheckOutConsumer>();
-builder.Services.AddScoped<OrderConsumer>();
+.AddHttpMessageHandler<AuthMessageHandler>();
+builder.Services.AddHttpClient<CheckOutConsumer>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7027/");
+})
+.AddHttpMessageHandler<AuthMessageHandler>();
+builder.Services.AddHttpClient<OrderConsumer>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7027/");
+})
+.AddHttpMessageHandler<AuthMessageHandler>();
+
+builder.Services.AddHttpClient<AdminCategoryConsumer>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7027/");
+})
+.AddHttpMessageHandler<AuthMessageHandler>();
+
+builder.Services.AddHttpClient<AdminOrderConsumer>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7027/");
+})
+.AddHttpMessageHandler<AuthMessageHandler>();
+
+builder.Services.AddHttpClient<AdminProductConsumer>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7027/");
+})
+.AddHttpMessageHandler<AuthMessageHandler>();
+
+builder.Services.AddHttpClient<AdminProductVariantConsumer>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7027/");
+})
+.AddHttpMessageHandler<AuthMessageHandler>();
+builder.Services.AddHttpClient<CategoryConsumer>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7027/");
+})
+.AddHttpMessageHandler<AuthMessageHandler>();
+builder.Services.AddHttpClient<DiscountConsumer>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7027/");
+})
+.AddHttpMessageHandler<AuthMessageHandler>();
+
 builder.Services.AddScoped<FavoriteStateService>();
 builder.Services.AddScoped<CartStateService>();
 builder.Services.AddScoped<ProductVariantConsumer>();
-builder.Services.AddScoped<CategoryConsumer>();
-builder.Services.AddOptions();
-builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
 builder.Services.AddScoped<TokenStorage>();
+builder.Services.AddOptions();
+builder.Services.AddAuthorizationCore();
 
 
 await builder.Build().RunAsync();

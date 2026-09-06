@@ -22,9 +22,13 @@ namespace Infrastructure.Repository
         {
             return await _context.carts.
                 Include(c=>c.CartItems)
-                .ThenInclude(ci=>ci.ProductVariant)
-                .ThenInclude(pv=>pv.Product)
-                .ThenInclude(p=>p.ProductImages)
+                    .ThenInclude(ci=>ci.ProductVariant)
+                    .ThenInclude(pv=>pv.Product)
+                    .ThenInclude(p=>p.ProductImages)
+                .Include(c=>c.CartItems)
+                    .ThenInclude(ci=>ci.ProductVariant)
+                    .ThenInclude(pv=>pv.Product)
+                    .ThenInclude(p=>p.Discount)
                 .FirstOrDefaultAsync(c => c.UserId == userId);
 
         }
@@ -71,7 +75,8 @@ namespace Infrastructure.Repository
         {
             return await _context.cartItems
                 .Include(ci=>ci.ProductVariant)
-                .ThenInclude(c=>c.Product)
+                    .ThenInclude(c=>c.Product)
+                    .ThenInclude(c=>c.Discount)
                 .FirstOrDefaultAsync(c=>c.CartItemId==CartItemId);
         }
         public async Task RemoveItemAsync(int cartItemId)

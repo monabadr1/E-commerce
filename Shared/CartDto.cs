@@ -16,5 +16,6 @@ namespace Shared
 
         public decimal TotalPrice {  get; set; }
 
+
     }
 }

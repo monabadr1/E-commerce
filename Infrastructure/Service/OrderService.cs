@@ -32,7 +32,8 @@ namespace Infrastructure.Service
             return new OrderDetailsDto
             {
                 OrderId = order.OrderId,
-                UserId = order.UserId,
+                CustomerName=order.User.Name, 
+                CustomerEmail=order.User.Email,
                 TotalPrice = order.TotalPrice,
                 Address = order.Address,
                 City = order.City,

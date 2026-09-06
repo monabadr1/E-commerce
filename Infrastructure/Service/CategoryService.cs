@@ -39,6 +39,7 @@ namespace Infrastructure.Service
                 CategoryId= c.CategoryId,
                 Name = c.Name,
                 ParentCategoryId= c.ParentCategoryId,
+                
 
             }).ToList();
         }

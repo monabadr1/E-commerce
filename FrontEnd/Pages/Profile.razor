@@ -3,46 +3,187 @@
 @using Shared
 @using FrontEnd.Service
 @using FrontEnd.Consumer
-@using System.Security.Claims;
-
+@using System.Security.Claims
 
 @inject NavigationManager Nav
 @inject AuthenticationStateProvider AuthStateProvider
+@inject OrderConsumer orderConsumer
 
-
-@if (user == null)
-{
-    <p>Loading...</p>
-}
-else
-{
-    <div class="profile-card">
-
-        <h2>My Account</h2>
-
-        <div class="profile-section">
-            <h4>Profile Information</h4>
-
-            <p><strong>Name:</strong> @user.Name</p>
-            <p><strong>Email:</strong> @user.Email</p>
+<div class="container my-5">
+    @if (user == null || isLoadingOrders)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border custom-spinner mb-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-muted">Loading your profile...</p>
         </div>
+    }
+    else
+    {
+        <div class="card shadow-sm border-0 profile-card">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-3">
+                <h2 class="mb-0 profile-title">My Account</h2>
+                <button class="btn btn-outline-danger btn-sm px-3" @onclick="Logout">
+                    Logout
+                </button>
+            </div>
 
-        <div class="profile-section">
-            <h4>Orders</h4>
+            <div class="card-body p-4">
+                <div class="row g-4">
 
-            <p>No Orders Yet</p>
+                    <!-- Profile Information -->
+                    <div class="col-md-5">
+                        <div class="p-4 rounded border inner-section-bg h-100">
+                            <h3 class="h5 mb-4 section-title">Profile Information</h3>
+
+                            <div class="mb-3">
+                                <label class="text-uppercase text-muted small fw-bold tracking-wider d-block mb-1">Name</label>
+                                <p class="fs-5 mb-0 fw-medium text-dark">@user.Name</p>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="text-uppercase text-muted small fw-bold tracking-wider d-block mb-1">Email Address</label>
+                                <p class="fs-5 mb-0 fw-medium text-dark">@user.Email</p>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="text-uppercase text-muted small fw-bold tracking-wider d-block mb-1">Phone</label>
+                                <p class="fs-5 mb-0 fw-medium text-dark">@(string.IsNullOrWhiteSpace(user.Phone) ? "N/A" : user.Phone)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order History -->
+                    <div class="col-md-7">
+                        <div class="p-4 rounded border inner-section-bg h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <h3 class="h5 mb-4 section-title">Order History</h3>
+
+                                @if (userOrders == null || !userOrders.Any())
+                                {
+                                    <div class="text-center py-4 text-muted">
+                                        <span class="fs-1 d-block mb-2">📦</span>
+                                        <p class="mb-0">No orders placed yet.</p>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="overflow-y-auto pe-1" style="max-height: 400px;">
+                                        @foreach (var order in userOrders)
+                                        {
+                                            <div class="card mb-3 border-0 shadow-sm rounded-3">
+                                                <div class="card-body p-3">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <span class="fw-bold text-theme">Order #@order.OrderId</span>
+                                                        <span class="badge bg-theme text-white border rounded-pill px-2 py-1">
+                                                            @order.Status
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="small text-muted mb-2">
+                                                        <i class="bi bi-calendar3 me-1"></i> @order.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")
+                                                    </div>
+
+                                                    <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                                                        <div>
+                                                            <span class="small text-muted d-block">Total Amount</span>
+                                                            <span class="fw-bold text-dark">@order.TotalPrice EGP</span>
+                                                        </div>
+                                                        <button class="btn-theme btn-outline-primary btn-sm rounded-2 px-3 fw-semibold"
+                                                                @onclick="() => ViewOrderDetails(order.OrderId)">
+                                                            Show Items
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="text-center mt-3">
+                                <button class="btn btn-theme w-100 py-2" @onclick="NavigateToHome">
+                                    Start Shopping
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
         </div>
+    }
+</div>
 
-        <button class="logout-btn" @onclick="Logout">
-            Logout
-        </button>
+<!-- Order Details Modal -->
+@if (showDetailsModal)
+{
+    <div class="modal fade show d-block" style="background: rgba(0,0,0,0.5);" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold text-theme">
+                        Order Details #@(selectedOrderDetails?.OrderId)
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseDetailsModal"></button>
+                </div>
 
+                <div class="modal-body p-4">
+                    @if (isLoadingDetails)
+                    {
+                        <div class="text-center py-4">
+                            <div class="spinner-border custom-spinner mb-2"></div>
+                            <p class="text-muted small mb-0">Loading order items...</p>
+                        </div>
+                    }
+                    else if (selectedOrderDetails != null && selectedOrderDetails.Items != null && selectedOrderDetails.Items.Any())
+                    {
+                        <div class="overflow-y-auto pe-1" style="max-height: 350px;">
+                            @foreach (var item in selectedOrderDetails.Items)
+                            {
+                                <div class="d-flex align-items-center gap-3 p-3 mb-2 rounded-3 bg-light">
+                                    <img src="@item.ImageUrl" class="rounded-3 border bg-white" style="width: 130px; height: 130px; object-fit: cover;" />
+                                    <div class="flex-grow-1">
+                                        <h6 class="fw-bold mb-1 text-dark">@item.ProductName</h6>
+                                        <span class="badge bg-secondary-subtle text-dark me-2">Size: @item.Size</span>
+                                        <span class="small text-theme">Qty: @item.Quantity</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="fw-bold text-dark d-block">@(item.Price * item.Quantity) EGP</span>
+                                        <small class="text-theme">(@item.Price EGP each)</small>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 mt-3 border-top">
+                            <span class="fw-bold text-theme">Grand Total</span>
+                            <span class="fs-4 fw-bold text-theme">@selectedOrderDetails.TotalPrice EGP</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center my-3">No details available for this order.</p>
+                    }
+                </div>
+
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-theme rounded-3 px-4" @onclick="CloseDetailsModal">Close</button>
+                </div>
+            </div>
+        </div>
     </div>
 }
 
 @code {
-
     private CurrentUserDto? user;
+    private List<OrderDto>? userOrders;
+    private OrderDetailsDto? selectedOrderDetails;
+
+    private bool isLoadingOrders = true;
+    private bool isLoadingDetails = false;
+    private bool showDetailsModal = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -54,18 +195,68 @@ else
             user = new CurrentUserDto
             {
                 Name = claimsPrincipal.FindFirst(ClaimTypes.Name)?.Value ?? "User",
-                Email = claimsPrincipal.FindFirst(ClaimTypes.Email)?.Value ?? ""
+                Email = claimsPrincipal.FindFirst(ClaimTypes.Email)?.Value ?? "",
+
+                Phone = claimsPrincipal.FindFirst(ClaimTypes.MobilePhone)?.Value
+                    ?? claimsPrincipal.FindFirst("mobilephone")?.Value
+                    ?? claimsPrincipal.FindFirst("phone")?.Value
+                    ?? claimsPrincipal.FindFirst(ClaimTypes.HomePhone)?.Value
+                    ?? ""
             };
+
+            var userIdClaim = claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier) ?? claimsPrincipal.FindFirst("sub");
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
+            {
+                try
+                {
+                    userOrders = await orderConsumer.GetOrdersAsync(userId);
+                }
+                catch (Exception)
+                {
+                    userOrders = new List<OrderDto>();
+                }
+            }
         }
         else
         {
             Nav.NavigateTo("/account");
         }
+
+        isLoadingOrders = false;
     }
+
+    private async Task ViewOrderDetails(int orderId)
+    {
+        showDetailsModal = true;
+        isLoadingDetails = true;
+        selectedOrderDetails = null;
+
+        try
+        {
+            selectedOrderDetails = await orderConsumer.GetOrderAsync(orderId);
+        }
+        catch (Exception)
+        {
+            selectedOrderDetails = null;
+        }
+
+        isLoadingDetails = false;
+    }
+
+    private void CloseDetailsModal()
+    {
+        showDetailsModal = false;
+        selectedOrderDetails = null;
+    }
+
+    private void NavigateToHome() => Nav.NavigateTo("/");
 
     async Task Logout()
     {
-        await ((CustomAuthStateProvider)AuthStateProvider).MarkUserAsLoggedOut();
+        if (AuthStateProvider is CustomAuthStateProvider customAuthProvider)
+        {
+            await customAuthProvider.MarkUserAsLoggedOut();
+        }
         Nav.NavigateTo("/");
     }
 }

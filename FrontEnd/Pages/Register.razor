@@ -7,47 +7,28 @@
 @inject NavigationManager Nav
 @inject AuthenticationStateProvider AuthStateProvider
 
-
 <div class="login-container">
-
     <div class="login-card">
-
         <h2>Create Account</h2>
         <EditForm Model="@model" OnValidSubmit="sign_up">
-
             <DataAnnotationsValidator />
-            <ValidationSummary />
+            <ValidationSummary class="text-danger small mb-3 p-0 list-unstyled" />
 
-            <InputText @bind-Value="model.Name"
-                       class="form-control"
-                       placeholder="Full Name" />
+            <InputText @bind-Value="model.Name" class="form-control" placeholder="Full Name" />
+            <InputText @bind-Value="model.Email" class="form-control" placeholder="Email" type="email" />
+            <InputText @bind-Value="model.Phone" class="form-control" placeholder="Phone Number" />
+            <InputText @bind-Value="model.Password" type="password" class="form-control" placeholder="Password" />
 
-            <InputText @bind-Value="model.Email"
-                       class="form-control"
-                       placeholder="Email" />
-
-            <InputText @bind-Value="model.Phone"
-                       class="form-control"
-                       placeholder="Phone" />
-
-            <InputText @bind-Value="model.Password"
-                       type="password"
-                       class="form-control"
-                       placeholder="Password" />
-
-            <button type="submit">
-                Register
-            </button>
-
+            <button type="submit" class="fw-bold mt-2">Register</button>
         </EditForm>
 
-
+        <p class="mt-3 text-center small text-muted">
+            Already have an account? <a href="/account" class="text-theme fw-bold text-decoration-none">Login</a>
+        </p>
     </div>
-
 </div>
 
 @code {
-
     RegisterDto model = new();
 
     protected override async Task OnInitializedAsync()
@@ -62,11 +43,9 @@
     async Task sign_up()
     {
         var result = await AuthConsumer.RegisterAsync(model);
-
         if (result is not null && !string.IsNullOrEmpty(result.Token))
         {
             await ((CustomAuthStateProvider)AuthStateProvider).MarkUserAsAuthenticate(result.Token);
-
             Nav.NavigateTo("/profile");
         }
     }

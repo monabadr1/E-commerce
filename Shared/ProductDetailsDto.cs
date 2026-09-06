@@ -16,6 +16,9 @@ namespace Shared
             public decimal Price { get; set; }
             public List<string> Images { get; set; } = new();
             public List<ProductVariantDto> Variants { get; set; } = new();
+            
+            public decimal DiscountPercentage {  get; set; }
+
         }
 
     }

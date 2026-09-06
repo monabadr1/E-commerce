@@ -22,7 +22,7 @@ namespace Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Domian.Entities.Cart", b =>
+            modelBuilder.Entity("Domain.Entities.Cart", b =>
                 {
                     b.Property<int>("CartId")
                         .ValueGeneratedOnAdd()
@@ -41,7 +41,7 @@ namespace Infrastructure.Migrations
                     b.ToTable("carts");
                 });
 
-            modelBuilder.Entity("Domian.Entities.CartItem", b =>
+            modelBuilder.Entity("Domain.Entities.CartItem", b =>
                 {
                     b.Property<int>("CartItemId")
                         .ValueGeneratedOnAdd()
@@ -71,7 +71,7 @@ namespace Infrastructure.Migrations
                     b.ToTable("cartItems");
                 });
 
-            modelBuilder.Entity("Domian.Entities.Category", b =>
+            modelBuilder.Entity("Domain.Entities.Category", b =>
                 {
                     b.Property<int>("CategoryId")
                         .ValueGeneratedOnAdd()
@@ -92,7 +92,7 @@ namespace Infrastructure.Migrations
                     b.ToTable("categories");
                 });
 
-            modelBuilder.Entity("Domian.Entities.Discount", b =>
+            modelBuilder.Entity("Domain.Entities.Discount", b =>
                 {
                     b.Property<int>("DiscountId")
                         .ValueGeneratedOnAdd()
@@ -121,12 +121,10 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("DiscountId");
 
-                    b.HasIndex("ProductId");
-
                     b.ToTable("discounts");
                 });
 
-            modelBuilder.Entity("Domian.Entities.Order", b =>
+            modelBuilder.Entity("Domain.Entities.Order", b =>
                 {
                     b.Property<int>("OrderId")
                         .ValueGeneratedOnAdd()
@@ -163,7 +161,7 @@ namespace Infrastructure.Migrations
                     b.ToTable("orders");
                 });
 
-            modelBuilder.Entity("Domian.Entities.OrderItem", b =>
+            modelBuilder.Entity("Domain.Entities.OrderItem", b =>
                 {
                     b.Property<int>("OrderItemId")
                         .ValueGeneratedOnAdd()
@@ -178,9 +176,6 @@ namespace Infrastructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int?>("ProductId")
-                        .HasColumnType("int");
-
                     b.Property<int>("ProductVariantId")
                         .HasColumnType("int");
 
@@ -191,14 +186,12 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.HasIndex("ProductId");
-
                     b.HasIndex("ProductVariantId");
 
                     b.ToTable("orderItems");
                 });
 
-            modelBuilder.Entity("Domian.Entities.Payment", b =>
+            modelBuilder.Entity("Domain.Entities.Payment", b =>
                 {
                     b.Property<int>("PaymentId")
                         .ValueGeneratedOnAdd()
@@ -229,7 +222,7 @@ namespace Infrastructure.Migrations
                     b.ToTable("payments");
                 });
 
-            modelBuilder.Entity("Domian.Entities.Product", b =>
+            modelBuilder.Entity("Domain.Entities.Product", b =>
                 {
                     b.Property<int>("ProductId")
                         .ValueGeneratedOnAdd()
@@ -243,8 +236,8 @@ namespace Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Imageurl")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("DiscountId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
@@ -253,10 +246,12 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("CategoryId");
 
+                    b.HasIndex("DiscountId");
+
                     b.ToTable("products");
                 });
 
-            modelBuilder.Entity("Domian.Entities.ProductImage", b =>
+            modelBuilder.Entity("Domain.Entities.ProductImage", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -277,13 +272,16 @@ namespace Infrastructure.Migrations
                     b.ToTable("productImages");
                 });
 
-            modelBuilder.Entity("Domian.Entities.ProductVariant", b =>
+            modelBuilder.Entity("Domain.Entities.ProductVariant", b =>
                 {
                     b.Property<int>("ProductVariantId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProductVariantId"));
+
+                    b.Property<string>("Color")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<decimal>("Price")
                         .HasPrecision(18, 2)
@@ -292,25 +290,22 @@ namespace Infrastructure.Migrations
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
 
+                    b.Property<string>("Size")
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<int>("StockQuantity")
                         .HasColumnType("int");
 
-                    b.Property<string>("color")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("size")
-                        .HasColumnType("nvarchar(450)");
-
                     b.HasKey("ProductVariantId");
 
-                    b.HasIndex("ProductId", "size", "color")
+                    b.HasIndex("ProductId", "Size", "Color")
                         .IsUnique()
-                        .HasFilter("[size] IS NOT NULL AND [color] IS NOT NULL");
+                        .HasFilter("[Size] IS NOT NULL AND [Color] IS NOT NULL");
 
                     b.ToTable("productVariants");
                 });
 
-            modelBuilder.Entity("Domian.Entities.Review", b =>
+            modelBuilder.Entity("Domain.Entities.Review", b =>
                 {
                     b.Property<int>("ReviewId")
                         .ValueGeneratedOnAdd()
@@ -342,7 +337,7 @@ namespace Infrastructure.Migrations
                     b.ToTable("Reviews");
                 });
 
-            modelBuilder.Entity("Domian.Entities.User", b =>
+            modelBuilder.Entity("Domain.Entities.User", b =>
                 {
                     b.Property<int>("UserId")
                         .ValueGeneratedOnAdd()
@@ -375,7 +370,7 @@ namespace Infrastructure.Migrations
                     b.ToTable("users");
                 });
 
-            modelBuilder.Entity("Domian.Entities.WishList", b =>
+            modelBuilder.Entity("Domain.Entities.WishList", b =>
                 {
                     b.Property<int>("WishListId")
                         .ValueGeneratedOnAdd()
@@ -388,21 +383,19 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("WishListId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .IsUnique();
 
                     b.ToTable("wishLists");
                 });
 
-            modelBuilder.Entity("Domian.Entities.WishListItem", b =>
+            modelBuilder.Entity("Domain.Entities.WishListItem", b =>
                 {
                     b.Property<int>("WishListItemId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("WishListItemId"));
-
-                    b.Property<int?>("ProductId")
-                        .HasColumnType("int");
 
                     b.Property<int>("ProductvariantId")
                         .HasColumnType("int");
@@ -412,8 +405,6 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("WishListItemId");
 
-                    b.HasIndex("ProductId");
-
                     b.HasIndex("ProductvariantId");
 
                     b.HasIndex("WishListId");
@@ -421,26 +412,26 @@ namespace Infrastructure.Migrations
                     b.ToTable("wishListItems");
                 });
 
-            modelBuilder.Entity("Domian.Entities.Cart", b =>
+            modelBuilder.Entity("Domain.Entities.Cart", b =>
                 {
-                    b.HasOne("Domian.Entities.User", "User")
-                        .WithOne("cart")
-                        .HasForeignKey("Domian.Entities.Cart", "UserId")
+                    b.HasOne("Domain.Entities.User", "User")
+                        .WithOne("Cart")
+                        .HasForeignKey("Domain.Entities.Cart", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Domian.Entities.CartItem", b =>
+            modelBuilder.Entity("Domain.Entities.CartItem", b =>
                 {
-                    b.HasOne("Domian.Entities.Cart", "Cart")
+                    b.HasOne("Domain.Entities.Cart", "Cart")
                         .WithMany("CartItems")
                         .HasForeignKey("CartId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domian.Entities.ProductVariant", "ProductVariant")
+                    b.HasOne("Domain.Entities.ProductVariant", "ProductVariant")
                         .WithMany()
                         .HasForeignKey("ProductVariantId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -451,9 +442,9 @@ namespace Infrastructure.Migrations
                     b.Navigation("ProductVariant");
                 });
 
-            modelBuilder.Entity("Domian.Entities.Category", b =>
+            modelBuilder.Entity("Domain.Entities.Category", b =>
                 {
-                    b.HasOne("Domian.Entities.Category", "ParentCategory")
+                    b.HasOne("Domain.Entities.Category", "ParentCategory")
                         .WithMany("SubCategories")
                         .HasForeignKey("ParentCategoryId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -461,19 +452,10 @@ namespace Infrastructure.Migrations
                     b.Navigation("ParentCategory");
                 });
 
-            modelBuilder.Entity("Domian.Entities.Discount", b =>
+            modelBuilder.Entity("Domain.Entities.Order", b =>
                 {
-                    b.HasOne("Domian.Entities.Product", "product")
-                        .WithMany()
-                        .HasForeignKey("ProductId");
-
-                    b.Navigation("product");
-                });
-
-            modelBuilder.Entity("Domian.Entities.Order", b =>
-                {
-                    b.HasOne("Domian.Entities.User", "User")
-                        .WithMany("orders")
+                    b.HasOne("Domain.Entities.User", "User")
+                        .WithMany("Orders")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -481,19 +463,15 @@ namespace Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Domian.Entities.OrderItem", b =>
+            modelBuilder.Entity("Domain.Entities.OrderItem", b =>
                 {
-                    b.HasOne("Domian.Entities.Order", "Order")
+                    b.HasOne("Domain.Entities.Order", "Order")
                         .WithMany("OrderItems")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domian.Entities.Product", "product")
-                        .WithMany()
-                        .HasForeignKey("ProductId");
-
-                    b.HasOne("Domian.Entities.ProductVariant", "ProductVariant")
+                    b.HasOne("Domain.Entities.ProductVariant", "ProductVariant")
                         .WithMany()
                         .HasForeignKey("ProductVariantId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -502,35 +480,39 @@ namespace Infrastructure.Migrations
                     b.Navigation("Order");
 
                     b.Navigation("ProductVariant");
-
-                    b.Navigation("product");
                 });
 
-            modelBuilder.Entity("Domian.Entities.Payment", b =>
+            modelBuilder.Entity("Domain.Entities.Payment", b =>
                 {
-                    b.HasOne("Domian.Entities.Order", "Order")
+                    b.HasOne("Domain.Entities.Order", "Order")
                         .WithOne("payment")
-                        .HasForeignKey("Domian.Entities.Payment", "OrderId")
+                        .HasForeignKey("Domain.Entities.Payment", "OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Order");
                 });
 
-            modelBuilder.Entity("Domian.Entities.Product", b =>
+            modelBuilder.Entity("Domain.Entities.Product", b =>
                 {
-                    b.HasOne("Domian.Entities.Category", "Category")
-                        .WithMany("products")
+                    b.HasOne("Domain.Entities.Category", "Category")
+                        .WithMany("Product")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Domain.Entities.Discount", "Discount")
+                        .WithMany("Products")
+                        .HasForeignKey("DiscountId");
+
                     b.Navigation("Category");
+
+                    b.Navigation("Discount");
                 });
 
-            modelBuilder.Entity("Domian.Entities.ProductImage", b =>
+            modelBuilder.Entity("Domain.Entities.ProductImage", b =>
                 {
-                    b.HasOne("Domian.Entities.Product", "Product")
+                    b.HasOne("Domain.Entities.Product", "Product")
                         .WithMany("ProductImages")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -539,110 +521,111 @@ namespace Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("Domian.Entities.ProductVariant", b =>
+            modelBuilder.Entity("Domain.Entities.ProductVariant", b =>
                 {
-                    b.HasOne("Domian.Entities.Product", "product")
-                        .WithMany("productVariants")
+                    b.HasOne("Domain.Entities.Product", "Product")
+                        .WithMany("ProductVariants")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("product");
+                    b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("Domian.Entities.Review", b =>
+            modelBuilder.Entity("Domain.Entities.Review", b =>
                 {
-                    b.HasOne("Domian.Entities.Product", "product")
+                    b.HasOne("Domain.Entities.Product", "Product")
                         .WithMany("Reviews")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domian.Entities.User", "user")
+                    b.HasOne("Domain.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("product");
+                    b.Navigation("Product");
 
-                    b.Navigation("user");
+                    b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Domian.Entities.WishList", b =>
+            modelBuilder.Entity("Domain.Entities.WishList", b =>
                 {
-                    b.HasOne("Domian.Entities.User", "user")
-                        .WithMany()
-                        .HasForeignKey("UserId")
+                    b.HasOne("Domain.Entities.User", "User")
+                        .WithOne("WishList")
+                        .HasForeignKey("Domain.Entities.WishList", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("user");
+                    b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Domian.Entities.WishListItem", b =>
+            modelBuilder.Entity("Domain.Entities.WishListItem", b =>
                 {
-                    b.HasOne("Domian.Entities.Product", "product")
-                        .WithMany()
-                        .HasForeignKey("ProductId");
-
-                    b.HasOne("Domian.Entities.ProductVariant", "productVariant")
+                    b.HasOne("Domain.Entities.ProductVariant", "ProductVariant")
                         .WithMany()
                         .HasForeignKey("ProductvariantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domian.Entities.WishList", "wishList")
-                        .WithMany("wishListItems")
+                    b.HasOne("Domain.Entities.WishList", "WishList")
+                        .WithMany("WishListItems")
                         .HasForeignKey("WishListId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("product");
+                    b.Navigation("ProductVariant");
 
-                    b.Navigation("productVariant");
-
-                    b.Navigation("wishList");
+                    b.Navigation("WishList");
                 });
 
-            modelBuilder.Entity("Domian.Entities.Cart", b =>
+            modelBuilder.Entity("Domain.Entities.Cart", b =>
                 {
                     b.Navigation("CartItems");
                 });
 
-            modelBuilder.Entity("Domian.Entities.Category", b =>
+            modelBuilder.Entity("Domain.Entities.Category", b =>
                 {
-                    b.Navigation("SubCategories");
+                    b.Navigation("Product");
 
-                    b.Navigation("products");
+                    b.Navigation("SubCategories");
                 });
 
-            modelBuilder.Entity("Domian.Entities.Order", b =>
+            modelBuilder.Entity("Domain.Entities.Discount", b =>
+                {
+                    b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Order", b =>
                 {
                     b.Navigation("OrderItems");
 
                     b.Navigation("payment");
                 });
 
-            modelBuilder.Entity("Domian.Entities.Product", b =>
+            modelBuilder.Entity("Domain.Entities.Product", b =>
                 {
                     b.Navigation("ProductImages");
 
+                    b.Navigation("ProductVariants");
+
                     b.Navigation("Reviews");
-
-                    b.Navigation("productVariants");
                 });
 
-            modelBuilder.Entity("Domian.Entities.User", b =>
+            modelBuilder.Entity("Domain.Entities.User", b =>
                 {
-                    b.Navigation("cart");
+                    b.Navigation("Cart");
 
-                    b.Navigation("orders");
+                    b.Navigation("Orders");
+
+                    b.Navigation("WishList");
                 });
 
-            modelBuilder.Entity("Domian.Entities.WishList", b =>
+            modelBuilder.Entity("Domain.Entities.WishList", b =>
                 {
-                    b.Navigation("wishListItems");
+                    b.Navigation("WishListItems");
                 });
 #pragma warning restore 612, 618
         }

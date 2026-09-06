@@ -62,7 +62,10 @@ namespace Infrastructure.Service
                 new Claim(ClaimTypes.NameIdentifier, dbuser.UserId.ToString()),
                 new Claim(ClaimTypes.Email, dbuser.Email ?? string.Empty),
                 new Claim(ClaimTypes.Name, dbuser.Name ?? string.Empty),
-                new Claim(ClaimTypes.Role, dbuser.Role ?? "User")
+                new Claim(ClaimTypes.Role, dbuser.Role ?? "User"),
+                new Claim(ClaimTypes.MobilePhone, dbuser.Phone ?? string.Empty),
+                new Claim("mobilephone", dbuser.Phone ?? string.Empty),
+                new Claim("phone", dbuser.Phone ?? string.Empty)
             };
 
             var key = new SymmetricSecurityKey(

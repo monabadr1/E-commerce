@@ -43,11 +43,14 @@ namespace Infrastructure.Repository
         {
             return await _context.wishLists
                 .Include(w => w.WishListItems)
-                .ThenInclude(i=>i.ProductVariant)
-                .ThenInclude(v=>v.Product)
-                .ThenInclude(p=>p.ProductImages)
-                .FirstOrDefaultAsync(c=>c.UserId==userId);
-
+                    .ThenInclude(i => i.ProductVariant)
+                        .ThenInclude(v => v.Product)
+                            .ThenInclude(p => p.ProductImages)
+                .Include(w => w.WishListItems)
+                    .ThenInclude(i => i.ProductVariant)
+                        .ThenInclude(v => v.Product)
+                            .ThenInclude(p => p.Discount)
+                .FirstOrDefaultAsync(c => c.UserId == userId);
         }
 
         public async Task<WishListItem?> GetWishListItem(int wishlistItemId)

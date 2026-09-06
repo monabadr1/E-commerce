@@ -23,6 +23,8 @@ namespace Infrastructure.Repository
                 .Include(o=>o.OrderItems)
                 .ThenInclude(o=>o.ProductVariant)
                 .ThenInclude(o=>o.Product)
+                .ThenInclude(p=>p.ProductImages)
+                .Include(u=>u.User)
                 .Include(o=>o.payment)
                 .FirstOrDefaultAsync(o => o.OrderId == orderId);
         }

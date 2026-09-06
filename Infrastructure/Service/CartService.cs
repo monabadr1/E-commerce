@@ -1,13 +1,11 @@
 ﻿using Domain.Entities;
 using Infrastructure.IRepository;
 using Infrastructure.IService;
-using Infrastructure.Repository;
 using Microsoft.Extensions.Caching.Memory;
 using Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Infrastructure.Service
@@ -18,41 +16,60 @@ namespace Infrastructure.Service
         private readonly IProductRepository _productRepository;
         private readonly IProductVariantRepository _productVariantRepository;
 
-        public CartService(ICartRepository cartRepository,IProductRepository prouductRepository , IProductVariantRepository productVariantRepository) { 
-        _cartRepository = cartRepository;
-        _productRepository = prouductRepository;
-        _productVariantRepository = productVariantRepository;
+        public CartService(ICartRepository cartRepository, IProductRepository prouductRepository, IProductVariantRepository productVariantRepository)
+        {
+            _cartRepository = cartRepository;
+            _productRepository = prouductRepository;
+            _productVariantRepository = productVariantRepository;
         }
-
 
         public async Task<CartDto?> GetCartAsync(int userId)
         {
-           var cart=  await _cartRepository.GetCartByUserIdAsync(userId);
+            var cart = await _cartRepository.GetCartByUserIdAsync(userId);
 
-            if (cart == null) 
+            if (cart == null)
                 return null;
-            var items = cart.CartItems.Select(item => new CartItemDto
+
+            var today = DateOnly.FromDateTime(DateTime.Now);
+
+            var items = cart.CartItems.Select(item =>
             {
-                CartItemId = item.CartItemId,
-                CartId = item.CartId,
-                ProductVartiantId = item.ProductVariantId,
-                ProductName = item.ProductVariant?.Product?.Name,
-                ImageUrl = item.ProductVariant?.Product?.ProductImages.FirstOrDefault()?.ImageUrl,
-                Size=item.ProductVariant?.Size,
-                Color=item.ProductVariant?.Color,
-                Price = item.Price,
-                Quantity = item.Quantity,
-            }
-            ).ToList();
+                var product = item.ProductVariant?.Product;
+                var originalPrice = item.ProductVariant?.Price ?? item.Price;
+
+                bool hasDiscount = product?.Discount != null
+                                   && product.Discount.IsActive
+                                   && product.Discount.StartDate <= today
+                                   && product.Discount.EndDate >= today;
+
+                decimal discountPercentage = hasDiscount ? product!.Discount!.Percentage : 0;
+                decimal finalPrice = hasDiscount
+                    ? originalPrice - (originalPrice * (discountPercentage / 100m))
+                    : originalPrice;
+
+                return new CartItemDto
+                {
+                    CartItemId = item.CartItemId,
+                    CartId = item.CartId,
+                    ProductVartiantId = item.ProductVariantId,
+                    ProductName = product?.Name,
+                    ImageUrl = product?.ProductImages?.FirstOrDefault()?.ImageUrl,
+                    Size = item.ProductVariant?.Size,
+                    Color = item.ProductVariant?.Color,
+
+                    OriginalPrice = originalPrice,
+                    Price = finalPrice,
+                    Quantity = item.Quantity,
+                };
+            }).ToList();
 
             return new CartDto
             {
                 CartId = cart.CartId,
                 UserId = cart.UserId,
                 Items = items,
-                TotalPrice=items.Sum(x=>x.Total)
+                TotalPrice = items.Sum(x => x.Price * x.Quantity) 
             };
-            
         }
 
         public async Task AddToCartAsync(int userId, int productVariantId, int quantity)
@@ -65,37 +82,51 @@ namespace Infrastructure.Service
                 throw new Exception("variant not found");
             if (variant.StockQuantity < quantity)
                 throw new Exception("stock is not found ");
-            var cart=await _cartRepository.GetCartByUserIdAsync(userId);
 
-            if (cart == null) { 
-                cart = new Cart {UserId = userId };
+            var cart = await _cartRepository.GetCartByUserIdAsync(userId);
+
+            if (cart == null)
+            {
+                cart = new Cart { UserId = userId };
                 await _cartRepository.CreateCartAsync(cart);
             }
+
             var cartItem = await _cartRepository.GetCartItemAsync(cart.CartId, productVariantId);
 
-            if (cartItem != null) {
+            // 📍 حساب السعر بناءً على وجود خصم على المنتج أم لا
+            var product = variant.Product;
+            var today = DateOnly.FromDateTime(DateTime.Now);
+
+            bool hasDiscount = product?.Discount != null
+                               && product.Discount.IsActive
+                               && product.Discount.StartDate <= today
+                               && product.Discount.EndDate >= today;
+
+            decimal finalPrice = hasDiscount
+                ? variant.Price - (variant.Price * (product!.Discount!.Percentage / 100m))
+                : variant.Price;
+
+            if (cartItem != null)
+            {
                 if (variant.StockQuantity < cartItem.Quantity + quantity)
                     throw new Exception("Not enough stock");
+
                 cartItem.Quantity += quantity;
-                await _cartRepository.UpdateCartItemAsync(cartItem);            
+                cartItem.Price = finalPrice; // تحديث السعر بالسعر المخفض الحالي
+                await _cartRepository.UpdateCartItemAsync(cartItem);
             }
             else
             {
-
                 var item = new CartItem
                 {
-                    CartId=cart.CartId,
+                    CartId = cart.CartId,
                     Quantity = quantity,
-                    ProductVariantId=productVariantId,
-                    Price = variant.Price
-
+                    ProductVariantId = productVariantId,
+                    Price = finalPrice // 📍 حفظ السعر النهائي المخفض
                 };
                 await _cartRepository.AddCartItemAsync(item);
             }
-      
         }
-
-
 
         public async Task UpdateQuantityAsync(UpdateCartItemDto item)
         {
@@ -105,6 +136,7 @@ namespace Infrastructure.Service
             var existingItem = await _cartRepository.GetCartItemByIdAsync(item.CartItemId);
             if (existingItem == null)
                 throw new Exception("Cart item not found");
+
             var variant = await _productVariantRepository.GetByIdAsync(existingItem.ProductVariantId);
             if (variant == null)
                 throw new Exception("Product variant not found");
@@ -123,35 +155,52 @@ namespace Infrastructure.Service
             {
                 await _cartRepository.ClearCartAsync(cart.CartId);
             }
-        
         }
-        public async Task RemoveCartItemAsync(int userId,int cartItemId)
+
+        public async Task RemoveCartItemAsync(int userId, int cartItemId)
         {
-            var cart =await _cartRepository.GetCartByUserIdAsync(userId);
+            var cart = await _cartRepository.GetCartByUserIdAsync(userId);
 
             if (cart == null)
                 throw new Exception("cart not found ");
-            var item = cart.CartItems.FirstOrDefault(x=>x.CartItemId==cartItemId);
+
+            var item = cart.CartItems.FirstOrDefault(x => x.CartItemId == cartItemId);
 
             if (item == null)
                 throw new Exception("Item not found");
+
             await _cartRepository.RemoveItemAsync(cartItemId);
         }
 
-        public async Task SyncCartAsync(int userId, List<LocalCartItemDto>localItems)
+        public async Task SyncCartAsync(int userId, List<LocalCartItemDto> localItems)
         {
             if (localItems == null || !localItems.Any())
                 return;
+
             var cart = await _cartRepository.GetCartByUserIdAsync(userId);
             if (cart == null)
             {
                 cart = new Cart { UserId = userId };
                 await _cartRepository.CreateCartAsync(cart);
             }
-            foreach(var localItem in localItems)
+
+            var today = DateOnly.FromDateTime(DateTime.Now);
+
+            foreach (var localItem in localItems)
             {
                 var variant = await _productVariantRepository.GetByIdAsync(localItem.ProductVariantId);
-                if (variant == null) continue; 
+                if (variant == null) continue;
+
+                // 📍 حساب الخصم أثناء الـ Sync
+                var product = variant.Product;
+                bool hasDiscount = product?.Discount != null
+                                   && product.Discount.IsActive
+                                   && product.Discount.StartDate <= today
+                                   && product.Discount.EndDate >= today;
+
+                decimal finalPrice = hasDiscount
+                    ? variant.Price - (variant.Price * (product!.Discount!.Percentage / 100m))
+                    : variant.Price;
 
                 var existingItem = await _cartRepository.GetCartItemAsync(cart.CartId, localItem.ProductVariantId);
 
@@ -159,8 +208,9 @@ namespace Infrastructure.Service
                 {
                     existingItem.Quantity += localItem.Quantity;
                     if (existingItem.Quantity > variant.StockQuantity)
-                        existingItem.Quantity = variant.StockQuantity; 
+                        existingItem.Quantity = variant.StockQuantity;
 
+                    existingItem.Price = finalPrice;
                     await _cartRepository.UpdateCartItemAsync(existingItem);
                 }
                 else
@@ -170,14 +220,11 @@ namespace Infrastructure.Service
                         CartId = cart.CartId,
                         ProductVariantId = localItem.ProductVariantId,
                         Quantity = localItem.Quantity > variant.StockQuantity ? variant.StockQuantity : localItem.Quantity,
-                        Price = variant.Price
+                        Price = finalPrice 
                     };
                     await _cartRepository.AddCartItemAsync(newItem);
                 }
             }
         }
-
-        }
-
     }
-
+}

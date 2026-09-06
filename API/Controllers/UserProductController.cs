@@ -27,7 +27,7 @@ namespace API.Controllers
             return Ok(product);
         }
 
-        [HttpGet("maincategory/{mainCategoryId}")]
+        [HttpGet("maincategory/{maincategoryId}")]
 
         public async Task<IActionResult> GetByMainCategoryAsync(int maincategoryId) {
             var products = await _productService.GetProductsByMainCategoryAsync(maincategoryId);

@@ -44,9 +44,9 @@ namespace FrontEnd.Consumer
             return await product.Content.ReadFromJsonAsync<List<ProductDto>>();
         }
 
-        public async Task<List<ProductDto>?> GetProductsByMainCategoryAsync(int mainCategoryId)
+        public async Task<List<ProductDto>?> GetProductsByMainCategoryAsync(int maincategoryId)
         {
-            var product = await _http.GetAsync($"api/products/maincategory/{mainCategoryId}");
+            var product = await _http.GetAsync($"api/products/maincategory/{maincategoryId}");
             var content = await product.Content.ReadAsStringAsync();
             if (!product.IsSuccessStatusCode)
             {

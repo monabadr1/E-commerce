@@ -55,5 +55,17 @@ namespace FrontEnd.Consumer
             }
             return await category.Content.ReadFromJsonAsync<CategoryDto>();
         }
+
+
+        public async Task AddCategoryAsync(CreatecategoryDto category)
+        {
+            var newcategory = await _http.PostAsJsonAsync($"api/category",category );
+            var content = await newcategory.Content.ReadAsStringAsync();
+            if (!newcategory.IsSuccessStatusCode)
+            {
+                throw new Exception(content);
+
+            }
+        }
     }
 }

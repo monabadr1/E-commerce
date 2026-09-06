@@ -27,5 +27,7 @@ namespace Shared
         public int Quantity { get; set; }
 
         public decimal Total => Price * Quantity;
+        public decimal OriginalPrice { get; set; }
+
     }
 }

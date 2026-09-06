@@ -20,6 +20,6 @@ namespace Shared
 
         public bool IsActive { get; set; }
 
-        public int? ProductId { get; set; }
+        public int AppliedProductsCount { get; set; }
     }
 }

@@ -14,182 +14,209 @@
 @if (product == null)
 {
     <div class="container py-5 text-center">
-        <div class="spinner-border text-dark"></div>
+        <div class="spinner-border custom-spinner"></div>
     </div>
 }
 else
 {
-    <div class="container py-4" style="max-width:750px;">
-        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
-
+    <div class="container py-4 py-md-5" style="max-width: 1000px;">
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden bg-white">
             <div class="row g-0">
 
-                <!-- Product Image -->
-                <div class="col-lg-5">
+                <!-- 1. قسم الصورة (Studio Fit) -->
+                <div class="col-md-6 position-relative overflow-hidden bg-light d-flex align-items-center justify-content-center" style="min-height: 520px; height: 100%;">
 
-                    <div class="position-relative h-100">
+                    <!-- 🏷️ شارة الخصم -->
+                    @if (product.DiscountPercentage > 0)
+                    {
+                        <span class="badge bg-danger position-absolute top-0 start-0 m-3 px-3 py-2 rounded-pill shadow-sm fs-6" style="z-index: 5;">
+                            <i class="bi bi-tag-fill me-1"></i> SAVE @product.DiscountPercentage%
+                        </span>
+                    }
 
-                        <img src="@product.Images.FirstOrDefault()"
-                             class="img-fluid w-100 product-main-image" />
+                    <!-- زر المفضلة -->
+                    <button class="btn btn-white shadow-sm rounded-circle position-absolute top-0 end-0 m-3 d-flex align-items-center justify-content-center favorite-floating-btn"
+                            @onclick="ToggleFavorite"
+                            title="Favorite"
+                            style="width: 42px; height: 42px; z-index: 10; background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(4px); border: none;">
+                        @if (isFavorite)
+                        {
+                            <i class="bi bi-heart-fill text-danger fs-5"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-heart text-dark fs-5"></i>
+                        }
+                    </button>
 
-                        <button class="btn btn-light shadow favorite-btn"
-                                @onclick="ToggleFavorite">
+                    <!-- عرض الصورة بحجم كامل ومتناسق -->
+                    <img src="@(product.Images?.FirstOrDefault() ?? "images/no-image.png")"
+                         class="w-100 h-100"
+                         alt="@product.Name"
+                         style="object-fit: cover; object-position: top center; min-height: 520px; display: block;" />
+                </div>
 
-                            @if (isFavorite)
+                <!-- 2. قسم التفاصيل والخيارات -->
+                <div class="col-md-6 d-flex flex-column justify-content-between p-4 p-lg-5">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="badge bg-theme-light text-theme px-3 py-2 rounded-pill text-uppercase fs-7 fw-bold tracking-wider">
+                                Premium Collection
+                            </span>
+                        </div>
+
+                        <h2 class="fw-bold text-theme text-capitalize mb-2" style="font-size: 1.8rem; letter-spacing: -0.5px;">
+                            @product.Name
+                        </h2>
+
+                        <!-- 💰 السعر مع الخصم -->
+                        <div class="d-flex align-items-baseline gap-3 mb-3">
+                            @if (product.DiscountPercentage > 0 && selectedVariant != null)
                             {
-                                <i class="bi bi-heart-fill text-danger fs-4"></i>
+                                var originalPrice = selectedVariant.Price;
+                                var discountedPrice = originalPrice - (originalPrice * (product.DiscountPercentage / 100m));
+
+                                <h3 class="fw-bold text-black mb-0 fs-2">
+                                    @discountedPrice.ToString("F2") <span class="fs-6 fw-normal text-muted">EGP</span>
+                                </h3>
+                                <span class="text-muted text-decoration-line-through fs-5">
+                                    @originalPrice.ToString("F2") EGP
+                                </span>
                             }
                             else
                             {
-                                <i class="bi bi-heart fs-4"></i>
+                                <h3 class="fw-bold text-theme mb-0 fs-2">
+                                    @(selectedVariant?.Price.ToString("N0") ?? "0") <span class="fs-6 fw-normal text-muted">EGP</span>
+                                </h3>
                             }
-
-                        </button>
-
-                    </div>
-
-                </div>
-
-                <!-- Product Info -->
-                <div class="col-lg-7">
-
-                    <div class="p-3 p-lg-4">
-
-                        <span class="badge bg-dark mb-3">
-                            Premium Product
-                        </span>
-
-                        <h1 class="fw-bold mb-3">
-                            @product.Name
-                        </h1>
-
-                        <p class="text-muted fs-5">
-                            @product.Description
-                        </p>
-
-                        <hr />
-
-                        <h4 class="fw-bold mb-4">
-                            Available Variants
-                        </h4>
-
-                        <div class="row g-3">
-
-                            @foreach (var item in product.Variants)
-                            {
-                                <div class="col-md-6">
-
-                                    <div class="card border-0 shadow-sm h-100 variant-card">
-
-                                        <div class="card-body">
-
-                                            <div class="d-flex align-items-center gap-2 mb-3">
-
-                                                <div class="color-circle"
-                                                     style="background:@item.color">
-                                                </div>
-
-                                                <span class="fw-semibold">
-                                                    @item.color
-                                                </span>
-
-                                            </div>
-
-                                            <p class="mb-2">
-                                                <strong>Size:</strong>
-                                                @item.size
-                                            </p>
-
-                                            <h4 class="fw-bold text-dark mb-3">
-                                                @item.Price EGP
-                                            </h4>
-
-                                            <button class="btn btn-dark w-100"
-                                                    @onclick="() => AddToCart(item)">
-
-                                                <i class="bi bi-cart-plus me-2"></i>
-
-                                                Add To Cart
-
-                                            </button>
-
-                                        </div>
-
-                                    </div>
-
-                                </div>
-                            }
-
                         </div>
 
+                        <!-- الوصف -->
+                        <p class="text-secondary small lh-base mb-4">
+                            @(string.IsNullOrEmpty(product.Description) ? "No description available for this product." : product.Description)
+                        </p>
+
+                        <hr class="my-4" style="border-color: var(--theme-border);" />
+
+                        @if (product.Variants != null && product.Variants.Any())
+                        {
+                            <!-- الألوان المتاحة -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="fw-bold text-theme small text-uppercase tracking-wider">Color</label>
+                                    <span class="small text-muted text-capitalize">@(selectedVariant?.color ?? "")</span>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var variant in product.Variants.GroupBy(v => v.color).Select(g => g.First()))
+                                    {
+                                        <button class="btn p-1 rounded-circle border-2 transition-all @(selectedVariant?.color == variant.color ? "border-dark shadow-sm scale-110" : "border-transparent opacity-75")"
+                                                style="width: 36px; height: 36px;"
+                                                @onclick="() => SelectColor(variant.color)"
+                                                title="@variant.color">
+                                            <div class="w-100 h-100 rounded-circle border shadow-inner" style="background-color: @GetCssColor(variant.color);"></div>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- اختيار المقاس -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="fw-bold text-theme small text-uppercase tracking-wider">Select Size</label>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var size in availableSizes)
+                                    {
+                                        <button class="btn btn-sm rounded-3 fw-bold text-uppercase px-3 py-2 transition-all @(selectedVariant?.size == size ? "btn-theme shadow-sm text-white" : "btn-outline-secondary text-dark border")"
+                                                @onclick="() => SelectSize(size)"
+                                                style="min-width: 45px;">
+                                            @size
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- العداد وزر الإضافة للسلة -->
+                    <div class="pt-3 border-top" style="border-color: var(--theme-border);">
+                        <div class="d-flex gap-3 align-items-center">
+                            <div class="input-group rounded-3 overflow-hidden border" style="width: 120px; border-color: var(--theme-border) !important;">
+                                <button class="btn btn-light border-0 fw-bold px-3 py-2 text-theme" type="button" @onclick="DecreaseQty">-</button>
+                                <input type="text" class="form-control text-center border-0 fw-bold bg-white text-theme" @bind="quantity" readonly />
+                                <button class="btn btn-light border-0 fw-bold px-3 py-2 text-theme" type="button" @onclick="IncreaseQty">+</button>
+                            </div>
+
+                            <button class="btn btn-theme flex-grow-1 py-2.5 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm fs-6"
+                                    @onclick="HandleAddToCart">
+                                <i class="bi bi-bag-plus fs-5"></i> Add to Bag
+                            </button>
+                        </div>
                     </div>
 
                 </div>
 
             </div>
-
         </div>
-
     </div>
 }
 
+<!-- Toast Notification -->
 @if (showToast)
 {
-    <div class="toast-container position-fixed top-0 end-0 p-3">
-
-        <div class="toast show border-0 shadow">
-
-            <div class="toast-header">
-
-                <strong class="me-auto text-success">
-                    Success
-                </strong>
-
-                <button class="btn-close"
-                        @onclick="CloseToast">
-                </button>
-
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080;">
+        <div class="toast show border-0 shadow-lg rounded-4 bg-white" role="alert">
+            <div class="d-flex p-3 align-items-center">
+                <i class="bi bi-check-circle-fill text-success fs-4 me-3"></i>
+                <div class="me-auto">
+                    <h6 class="mb-0 fw-bold text-dark">Added to Bag</h6>
+                    <small class="text-muted">Item was added successfully.</small>
+                </div>
+                <button type="button" class="btn-close ms-2" @onclick="CloseToast"></button>
             </div>
-
-            <div class="toast-body">
-
-                <i class="bi bi-check-circle-fill text-success me-2"></i>
-
-                Product added to cart successfully
-
-            </div>
-
         </div>
-
     </div>
 }
+
 @code {
     bool showToast = false;
     bool isFavorite = false;
     bool isLoggedIn = false;
+    int quantity = 1;
 
-    [Parameter]
-    public int productId { get; set; }
-
+    [Parameter] public int productId { get; set; }
     ProductDetailsDto? product;
-
+    ProductVariantDto? selectedVariant;
+    List<string> availableSizes = new();
     int currentWishListItemId = 0;
 
     protected override async Task OnParametersSetAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         isLoggedIn = authState.User.Identity?.IsAuthenticated ?? false;
-        product = await productConsumer.GetProductByIdAsync(productId);
 
-        if (product != null)
+        try
         {
-            var firstVariantId = product.Variants.FirstOrDefault()?.ProductVariantId ?? 0;
+            product = await productConsumer.GetProductByIdAsync(productId);
+        }
+        catch
+        {
+            product = null;
+            return;
+        }
+
+        if (product != null && product.Variants != null && product.Variants.Any())
+        {
+            selectedVariant = product.Variants.FirstOrDefault();
+            UpdateSizeList();
+
+            var firstVariantId = selectedVariant?.ProductVariantId ?? 0;
             if (isLoggedIn)
             {
                 try
                 {
                     var wishlist = await wishListConsumer.GetWishListByUserIdAsync();
-                    var item = wishlist?.wishListItems.FirstOrDefault(x => x.ProductvariantId == firstVariantId);
+                    var item = wishlist?.wishListItems?.FirstOrDefault(x => x.ProductvariantId == firstVariantId);
                     if (item != null)
                     {
                         isFavorite = true;
@@ -205,46 +232,114 @@ else
         }
     }
 
-    async Task AddToCart(ProductVariantDto item)
+    private void SelectColor(string color)
     {
+        var validVariant = product?.Variants?.FirstOrDefault(v => v.color == color);
+        if (validVariant != null)
+        {
+            selectedVariant = validVariant;
+            UpdateSizeList();
+        }
+    }
+
+    private void SelectSize(string size)
+    {
+        var matchingVariant = product?.Variants?.FirstOrDefault(v => v.color == selectedVariant?.color && v.size == size);
+        if (matchingVariant != null)
+        {
+            selectedVariant = matchingVariant;
+        }
+    }
+
+    private void UpdateSizeList()
+    {
+        if (product?.Variants != null && selectedVariant != null)
+        {
+            availableSizes = product.Variants
+                .Where(v => v.color == selectedVariant.color)
+                .Select(v => v.size)
+                .ToList();
+
+            if (!availableSizes.Contains(selectedVariant.size))
+            {
+                selectedVariant.size = availableSizes.FirstOrDefault() ?? "";
+            }
+        }
+    }
+
+    private string GetCssColor(string? colorName)
+    {
+        if (string.IsNullOrWhiteSpace(colorName)) return "#cccccc";
+
+        return colorName.Trim().ToLower() switch
+        {
+            "navy blue" or "navy" => "#001f3f",
+            "black" => "#111111",
+            "white" => "#ffffff",
+            "beige" => "#f5f5dc",
+            "gray" or "grey" => "#808080",
+            "red" => "#dc3545",
+            "green" => "#198754",
+            "blue" => "#0d6efd",
+            "pink" => "#d63384",
+            "yellow" => "#ffc107",
+            "brown" => "#795548",
+            "purple" => "#6f42c1",
+            "orange" => "#fd7e14",
+            _ => colorName
+        };
+    }
+
+    private void IncreaseQty() => quantity++;
+    private void DecreaseQty() { if (quantity > 1) quantity--; }
+
+    async Task HandleAddToCart()
+    {
+        if (selectedVariant == null) return;
+
+        decimal finalPrice = selectedVariant.Price;
+        if (product != null && product.DiscountPercentage > 0)
+        {
+            finalPrice = selectedVariant.Price - (selectedVariant.Price * (product.DiscountPercentage / 100m));
+        }
+
         if (isLoggedIn)
         {
-            await cartConsumer.AddToCartAsync(item.ProductVariantId, 1);
+            await cartConsumer.AddToCartAsync(selectedVariant.ProductVariantId, quantity);
         }
         else
         {
-            await cartStateService.AddToCartAsync(
-                new LocalCartItemDto
-                {
-                    ProductVariantId = item.ProductVariantId,
-                    ProductName = product?.Name,
-                    ImageUrl = product?.Images.FirstOrDefault(),
-                    Price = item.Price,
-                    Quantity = 1,
-                    Color = item.color,
-                    Size = item.size
-                });
+            await cartStateService.AddToCartAsync(new LocalCartItemDto
+            {
+                ProductVariantId = selectedVariant.ProductVariantId,
+                ProductName = product?.Name,
+                ImageUrl = product?.Images?.FirstOrDefault(),
+                Price = finalPrice,
+                Quantity = quantity,
+                Color = selectedVariant.color,
+                Size = selectedVariant.size
+            });
         }
 
         showToast = true;
         StateHasChanged();
-
         await Task.Delay(3000);
-
         showToast = false;
         StateHasChanged();
     }
-    void CloseToast()
-    {
-        showToast = false;
-    }
+
+    void CloseToast() => showToast = false;
 
     async Task ToggleFavorite()
     {
-        if (product == null)
-            return;
+        if (product == null || selectedVariant == null) return;
+        var currentVarId = selectedVariant.ProductVariantId;
 
-        var firstVariantId = product.Variants.FirstOrDefault()?.ProductVariantId ?? 0;
+        decimal currentPrice = selectedVariant.Price;
+        if (product.DiscountPercentage > 0)
+        {
+            currentPrice = selectedVariant.Price - (selectedVariant.Price * (product.DiscountPercentage / 100m));
+        }
 
         if (isFavorite)
         {
@@ -258,7 +353,7 @@ else
             }
             else
             {
-                await favoriteStateService.RemoveFromFavoriteAsync(firstVariantId);
+                await favoriteStateService.RemoveFromFavoriteAsync(currentVarId);
             }
             isFavorite = false;
         }
@@ -266,28 +361,26 @@ else
         {
             if (isLoggedIn)
             {
-                await wishListConsumer.AddWishListAsync(firstVariantId);
+                await wishListConsumer.AddWishListAsync(currentVarId);
                 try
                 {
                     var wishlist = await wishListConsumer.GetWishListByUserIdAsync();
-                    var item = wishlist?.wishListItems.FirstOrDefault(x => x.ProductvariantId == firstVariantId);
+                    var item = wishlist?.wishListItems?.FirstOrDefault(x => x.ProductvariantId == currentVarId);
                     if (item != null) currentWishListItemId = item.WishListItemId;
                 }
                 catch { }
             }
             else
             {
-                await favoriteStateService.AddToFavoriteAsync(
-                    new FavoriteItemDto
-                    {
-                        ProductId = product.ProductId,
-                        ProductVariantId = firstVariantId,
-                        ProductName = product.Name,
-                        ImageUrl = product.Images.FirstOrDefault(),
-                        Price = product.Variants.FirstOrDefault()?.Price ?? 0
-                    });
+                await favoriteStateService.AddToFavoriteAsync(new FavoriteItemDto
+                {
+                    ProductId = product.ProductId,
+                    ProductVariantId = currentVarId,
+                    ProductName = product.Name,
+                    ImageUrl = product.Images?.FirstOrDefault(),
+                    Price = currentPrice
+                });
             }
-
             isFavorite = true;
         }
     }

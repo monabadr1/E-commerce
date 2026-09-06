@@ -20,6 +20,7 @@ namespace Domain.Entities
 
         public ICollection<ProductVariant> ProductVariants { get; set; } = new List<ProductVariant>();
 
-        public ICollection<Discount> Discounts { get; set; }=new List<Discount>();
+        public int? DiscountId { get; set; }
+        public Discount? Discount { get; set; }
     }
 }

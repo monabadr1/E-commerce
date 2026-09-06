@@ -74,25 +74,47 @@ namespace Infrastructure.Service
 
                 await _wishlistRepository.CreateWishList(wishlist);
             }
+            var today = DateOnly.FromDateTime(DateTime.Now);
 
             return new WishListDto
             {
                 UserId = userId,
                 WishListId = wishlist.WishListId,
-                wishListItems = wishlist.WishListItems.Select(item => new WishListItemDto
+                wishListItems = wishlist.WishListItems.Select(item => 
                 {
-                    ProductvariantId = item.ProductvariantId,
-                    WishListId=item.WishListId,
-                    WishListItemId=item.WishListItemId,
-                    Price=item.ProductVariant?.Price ?? 0,
-                    ProductName=item.ProductVariant?.Product?.Name,
-                    ImageUrl=item.ProductVariant?
-                    .Product?
-                    .ProductImages?
-                    .FirstOrDefault()?.ImageUrl
+                    var product = item.ProductVariant?.Product;
+                    var originalPrice = item.ProductVariant?.Price ?? 0;
+
+                    bool hasDiscount = product?.Discount != null
+                    && product.Discount.IsActive
+                    && product.Discount.StartDate <= today
+                    && product.Discount.EndDate >= today;
+
+                    decimal discountPercentage = hasDiscount ? product!.Discount!.Percentage : 0;
+                    decimal finalPrice = hasDiscount
+                    ? originalPrice - (originalPrice * (discountPercentage / 100m))
+                    : originalPrice;
+
+                    return new WishListItemDto
+                    {
+                        ProductId=item.ProductVariant.ProductId,
+                        ProductvariantId = item.ProductvariantId,
+                        WishListId = item.WishListId,
+                        WishListItemId = item.WishListItemId,
+                        ProductName = product?.Name,
+
+                        OriginalPrice = originalPrice,
+                        Price = finalPrice,
+
+                        ImageUrl = product?.ProductImages.FirstOrDefault()?.ImageUrl,
+
+                    };
+
+                }
+                
                     
 
-                }).ToList()
+                ).ToList()
 
             };
 
@@ -105,6 +127,7 @@ namespace Infrastructure.Service
                 throw new Exception("wishlistItem is empty");
             return new WishListItemDto
             {
+                ProductId=wishlistItem.ProductVariant.ProductId,
                 ProductvariantId = wishlistItem.ProductvariantId,
                 WishListId = wishlistItem.WishListId,
                 WishListItemId = wishlistItem.WishListItemId,
