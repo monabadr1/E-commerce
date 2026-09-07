@@ -30,7 +30,7 @@
             </div>
 
             <div class="card-body p-4">
-                <div class="row g-4">
+                <div class="row g-4 align-items-stretch">
 
                     <!-- Profile Information -->
                     <div class="col-md-5">
@@ -46,6 +46,7 @@
                                 <label class="text-uppercase text-muted small fw-bold tracking-wider d-block mb-1">Email Address</label>
                                 <p class="fs-5 mb-0 fw-medium text-dark">@user.Email</p>
                             </div>
+
 
                             <div class="mb-3">
                                 <label class="text-uppercase text-muted small fw-bold tracking-wider d-block mb-1">Phone</label>
@@ -69,7 +70,7 @@
                                 }
                                 else
                                 {
-                                    <div class="overflow-y-auto pe-1" style="max-height: 400px;">
+                                    <div class="pe-1">
                                         @foreach (var order in userOrders)
                                         {
                                             <div class="card mb-3 border-0 shadow-sm rounded-3">
