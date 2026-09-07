@@ -1,11 +1,11 @@
 # 🚀 E-commerce Web Application for Online Clothing Shopping
 
-A clean, modular full-stack application built with **.NET / C#**, featuring an **ASP.NET Core Web API** backend and a **Blazor WebAssembly** client. 
-The project utilizes a dedicated Consumer service pattern for client-server communication and shared Data Transfer Objects (DTOs).
+An end-to-end full-stack e-commerce platform specialized in online clothing retail, built with **.NET / C#**. The system features a responsive **Blazor WebAssembly** storefront and a scalable **ASP.NET Core Web API** backend with Clean Architecture. It delivers an intuitive shopping experience for browsing apparel, managing color and size product variants, dynamic discounts, local-to-remote cart synchronization, and secure checkout.
 
 ---
 
 ## 📑 Table of Contents
+- [About the Project](#-about-the-project)
 - [Architecture & Flow](#-architecture--flow)
 - [Project Structure](#-project-structure)
 - [Technologies & Libraries](#-technologies--libraries)
@@ -15,8 +15,18 @@ The project utilizes a dedicated Consumer service pattern for client-server comm
 - [Port & Localhost Configuration](#-port--localhost-configuration)
 - [Database Migrations](#-database-migrations)
 - [Running the Application](#-running-the-application)
-- [API Endpoints](#-api-endpoints)
+- [Core Cart Endpoints](#-core-cart-endpoints)
 - [License](#-license)
+
+---
+
+## 🛍️ About the Project
+
+This platform is tailored specifically for apparel and fashion e-commerce, offering:
+- **Product Variant Management:** Seamless handling of clothing sizes (S, M, L, XL, etc.) and colors.
+- **Dynamic Pricing & Discounts:** Automatic date-bound discount calculations across product variants.
+- **Smart Shopping Cart:** Persistent cart management with guest local storage cart syncing seamlessly to the user's database cart upon authentication.
+- **Consumer Pattern Architecture:** Clean separation between the Blazor UI components and HTTP communication via dedicated consumer services.
 
 ---
 
