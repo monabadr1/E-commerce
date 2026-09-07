@@ -16,7 +16,7 @@ An end-to-end full-stack e-commerce platform specialized in online clothing reta
 - [Database Migrations](#-database-migrations)
 - [Running the Application](#-running-the-application)
 - [Core Cart Endpoints](#-core-cart-endpoints)
-- [License](#-license)
+
 
 ---
 
