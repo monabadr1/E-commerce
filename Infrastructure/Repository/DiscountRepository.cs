@@ -67,9 +67,12 @@ namespace Infrastructure.Repository
 
         public async Task<Discount?> GetLatestActiveDiscountAsync()
         {
+            var today=DateOnly.FromDateTime(DateTime.UtcNow);
             return await _context.discounts
                 .Include(d=>d.Products)
-                .Where(d => d.IsActive)
+                .Where(d => d.IsActive 
+                && d.StartDate<=today
+                && d.EndDate>=today)
                 .OrderByDescending(d => d.DiscountId)
                 .FirstOrDefaultAsync();
         }

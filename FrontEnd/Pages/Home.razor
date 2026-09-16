@@ -153,7 +153,7 @@
 <!-- Dynamic Banner Section -->
 <section class="py-5 bg-theme text-white text-center shadow-inner">
     <div class="container py-4">
-        @if (latestDiscount != null)
+        @if (latestDiscount != null && latestDiscount.DiscountId > 0 && !string.IsNullOrWhiteSpace(latestDiscount.Name))
         {
             <h2 class="display-5 fw-bold text-white mb-2">
                 @latestDiscount.Name

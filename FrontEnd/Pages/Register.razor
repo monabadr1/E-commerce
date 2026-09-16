@@ -6,6 +6,10 @@
 @inject AuthConsumer AuthConsumer
 @inject NavigationManager Nav
 @inject AuthenticationStateProvider AuthStateProvider
+@inject CartStateService CartState
+@inject CartConsumer CartConsumer
+@inject FavoriteStateService FavoriteStateService
+@inject WishListConsumer WishListConsumer
 
 <div class="login-container">
     <div class="login-card">
@@ -14,10 +18,32 @@
             <DataAnnotationsValidator />
             <ValidationSummary class="text-danger small mb-3 p-0 list-unstyled" />
 
-            <InputText @bind-Value="model.Name" class="form-control" placeholder="Full Name" />
-            <InputText @bind-Value="model.Email" class="form-control" placeholder="Email" type="email" />
-            <InputText @bind-Value="model.Phone" class="form-control" placeholder="Phone Number" />
-            <InputText @bind-Value="model.Password" type="password" class="form-control" placeholder="Password" />
+            <InputText @bind-Value="model.Name" class="form-control mb-3" placeholder="Full Name" />
+            <InputText @bind-Value="model.Email" class="form-control mb-3" placeholder="Email" type="email" />
+            <InputText @bind-Value="model.Phone" class="form-control mb-3" placeholder="Phone Number" />
+
+            <!-- Password Field -->
+            <!-- Password Field -->
+            <div class="password-wrapper mb-3">
+                <InputText @bind-Value="model.Password"
+                           type="@(showPassword ? "text" : "password")"
+                           class="form-control"
+                           placeholder="Password" />
+                <span class="password-toggle-icon" @onclick="() => showPassword = !showPassword">
+                    <i class="@(showPassword ? "bi bi-eye-slash" : "bi bi-eye")"></i>
+                </span>
+            </div>
+
+            <!-- Confirm Password Field -->
+            <div class="password-wrapper mb-3">
+                <InputText @bind-Value="model.Confirmpassword"
+                           type="@(showConfirmPassword ? "text" : "password")"
+                           class="form-control"
+                           placeholder="Confirm Password" />
+                <span class="password-toggle-icon" @onclick="() => showConfirmPassword = !showConfirmPassword">
+                    <i class="@(showConfirmPassword ? "bi bi-eye-slash" : "bi bi-eye")"></i>
+                </span>
+            </div>
 
             <button type="submit" class="fw-bold mt-2">Register</button>
         </EditForm>
@@ -30,6 +56,9 @@
 
 @code {
     RegisterDto model = new();
+
+    bool showPassword = false;
+    bool showConfirmPassword = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -46,6 +75,29 @@
         if (result is not null && !string.IsNullOrEmpty(result.Token))
         {
             await ((CustomAuthStateProvider)AuthStateProvider).MarkUserAsAuthenticate(result.Token);
+
+            // --- 1. دمج محتويات السلة المحلية مع حساب السيرفر ---
+            var localCart = await CartState.GetCartAsync();
+            if (localCart != null && localCart.Any())
+            {
+                foreach (var item in localCart)
+                {
+                    await CartConsumer.AddToCartAsync(item.ProductVariantId, item.Quantity
+                    );
+                }
+                await CartState.ClearCartAsync(); 
+            }
+
+            var localFavs = await FavoriteStateService.GetFavoriteAsync();
+            if (localFavs != null && localFavs.Any())
+            {
+                foreach (var item in localFavs)
+                {
+                    await WishListConsumer.AddWishListAsync(item.ProductId);
+                }
+                await FavoriteStateService.ClearFavoriteAsync(); // تفريغ المفضلة المحلية
+            }
+
             Nav.NavigateTo("/profile");
         }
     }
